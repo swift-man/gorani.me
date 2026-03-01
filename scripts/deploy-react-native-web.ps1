@@ -31,15 +31,44 @@ npx expo export --platform web --output-dir dist
 
 $distPath = Join-Path $rnPath "dist"
 if (!(Test-Path $distPath)) { throw "Build output not found: $distPath" }
+$distIndexPath = Join-Path $distPath "index.html"
+if (!(Test-Path $distIndexPath)) { throw "Build output missing index.html: $distIndexPath" }
 
 Write-Host "[5/6] Sync build files to web root: $WebRoot"
-if (!(Test-Path $WebRoot)) {
-  New-Item -Path $WebRoot -ItemType Directory -Force | Out-Null
+$webParent = Split-Path -Parent $WebRoot
+if (!(Test-Path $webParent)) {
+  New-Item -Path $webParent -ItemType Directory -Force | Out-Null
 }
 
-# Clean old files for deterministic deploy
-Get-ChildItem -Path $WebRoot -Force | Remove-Item -Recurse -Force
-Copy-Item -Path (Join-Path $distPath "*") -Destination $WebRoot -Recurse -Force
+$stagingPath = Join-Path $webParent ("gorani.me.__staging__" + [guid]::NewGuid().ToString("N"))
+$backupPath = Join-Path $webParent "gorani.me.__backup__"
+
+if (Test-Path $stagingPath) { Remove-Item -Path $stagingPath -Recurse -Force }
+if (Test-Path $backupPath) { Remove-Item -Path $backupPath -Recurse -Force }
+
+New-Item -Path $stagingPath -ItemType Directory -Force | Out-Null
+Copy-Item -Path (Join-Path $distPath "*") -Destination $stagingPath -Recurse -Force
+
+$stagingIndexPath = Join-Path $stagingPath "index.html"
+if (!(Test-Path $stagingIndexPath)) { throw "Staging output missing index.html: $stagingIndexPath" }
+
+try {
+  if (Test-Path $WebRoot) {
+    Move-Item -Path $WebRoot -Destination $backupPath -Force
+  }
+  Move-Item -Path $stagingPath -Destination $WebRoot -Force
+  if (Test-Path $backupPath) {
+    Remove-Item -Path $backupPath -Recurse -Force
+  }
+} catch {
+  if (Test-Path $stagingPath) {
+    Remove-Item -Path $stagingPath -Recurse -Force
+  }
+  if ((Test-Path $backupPath) -and !(Test-Path $WebRoot)) {
+    Move-Item -Path $backupPath -Destination $WebRoot -Force
+  }
+  throw
+}
 
 Write-Host "[6/6] Validate nginx config and reload"
 $nginxExe = Join-Path $NginxPath "nginx.exe"
