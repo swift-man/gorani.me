@@ -1,0 +1,32 @@
+name: Deploy React Native Web (Local Windows)
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "react-native/**"
+      - "scripts/deploy-react-native-web.ps1"
+      - ".github/workflows/deploy-react-native-web.yml"
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, windows]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "react-native/package-lock.json"
+
+      - name: Deploy React Native web build and reload nginx
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts/deploy-react-native-web.ps1 `
+            -ProjectPath "C:\Users\ksj\gorani.me" `
+            -NginxPath "C:\Users\ksj\nginx-1.29.2" `
+            -WebRoot "C:\Users\ksj\nginx-1.29.2\html\gorani.me"

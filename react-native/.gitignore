@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+
+# Build outputs
+dist/
+web-build/
+coverage/
+*.tsbuildinfo

@@ -1,0 +1,15 @@
+# Virtualenv
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Test / type check cache
+.pytest_cache/
+.mypy_cache/
+
+# Coverage
+.coverage
+htmlcov/
