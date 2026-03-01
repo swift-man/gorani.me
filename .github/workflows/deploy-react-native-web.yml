@@ -25,6 +25,6 @@ jobs:
         shell: cmd
         run: |
           powershell -NoProfile -ExecutionPolicy Bypass -File scripts\deploy-react-native-web.ps1 ^
-            -ProjectPath "C:\Users\ksj\gorani.me" ^
+            -WorkspacePath "%GITHUB_WORKSPACE%" ^
             -NginxPath "C:\Users\ksj\nginx-1.29.2" ^
             -WebRoot "C:\Users\ksj\nginx-1.29.2\html\gorani.me"

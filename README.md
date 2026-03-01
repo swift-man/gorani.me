@@ -10,11 +10,12 @@ This repository includes automation for deploying `react-native` web build to a 
 - `deploy/nginx/gorani.me.conf`
 
 ### Server assumptions
-- Project path: `C:\Users\ksj\gorani.me`
 - Nginx path: `C:\Users\ksj\nginx-1.29.2`
 - Web root: `C:\Users\ksj\nginx-1.29.2\html\gorani.me`
 - Domain: `gorani.me`
 - Local IP: `192.168.1.234`
+
+`react-native` source is built from GitHub Actions checkout workspace (`GITHUB_WORKSPACE`), not from a fixed local project folder.
 
 ### One-time setup
 1. Install GitHub Actions self-hosted runner on your Windows server (`C:\Users\ksj\gorani.me` machine).

@@ -1,5 +1,5 @@
 Param(
-  [string]$ProjectPath = "C:\Users\ksj\gorani.me",
+  [string]$WorkspacePath = $env:GITHUB_WORKSPACE,
   [string]$NginxPath = "C:\Users\ksj\nginx-1.29.2",
   [string]$WebRoot = "C:\Users\ksj\nginx-1.29.2\html\gorani.me"
 )
@@ -7,10 +7,13 @@ Param(
 $ErrorActionPreference = "Stop"
 
 Write-Host "[1/6] Validate paths"
-if (!(Test-Path $ProjectPath)) { throw "Project path not found: $ProjectPath" }
+if ([string]::IsNullOrWhiteSpace($WorkspacePath)) {
+  throw "Workspace path is empty. Expected GITHUB_WORKSPACE or -WorkspacePath."
+}
+if (!(Test-Path $WorkspacePath)) { throw "Workspace path not found: $WorkspacePath" }
 if (!(Test-Path $NginxPath)) { throw "Nginx path not found: $NginxPath" }
 
-$rnPath = Join-Path $ProjectPath "react-native"
+$rnPath = Join-Path $WorkspacePath "react-native"
 if (!(Test-Path $rnPath)) { throw "react-native path not found: $rnPath" }
 
 Write-Host "[2/6] Move to react-native project"
