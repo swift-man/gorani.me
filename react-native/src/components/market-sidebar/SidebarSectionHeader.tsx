@@ -1,14 +1,20 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import {
   DARK_BORDER_COLOR,
+  FLOW_COLUMN_WIDTH,
   LIGHT_SIDEBAR_BACKGROUND,
   LIGHT_SIDEBAR_BORDER,
   LIST_HORIZONTAL_MARGIN,
   LIST_HORIZONTAL_PADDING,
+  PRICE_COLUMN_WIDTH,
+  PRICE_COLUMN_WIDTH_MOBILE,
   SECTION_HEADER_HEIGHT,
+  SYMBOL_COLUMN_WIDTH,
+  SYMBOL_COLUMN_WIDTH_MOBILE,
   SYMBOL_ICON_GAP,
-  SYMBOL_ICON_SIZE
+  SYMBOL_ICON_SIZE,
+  VOLUME_COLUMN_WIDTH
 } from './config';
 
 type SidebarSectionHeaderProps = {
@@ -16,14 +22,26 @@ type SidebarSectionHeaderProps = {
   isTwoColumnLayout: boolean;
   hideVolumeColumn: boolean;
   hideFlowColumns: boolean;
+  isMobileLayout?: boolean;
 };
 
 export default function SidebarSectionHeader({
   isDarkMode,
   isTwoColumnLayout,
   hideVolumeColumn,
-  hideFlowColumns
+  hideFlowColumns,
+  isMobileLayout = false
 }: SidebarSectionHeaderProps) {
+  const stickySymbolWebStyle =
+    Platform.OS === 'web'
+      ? ({
+          position: 'sticky',
+          left: 0,
+          zIndex: 4,
+          backgroundColor: isDarkMode ? '#212429' : LIGHT_SIDEBAR_BACKGROUND
+        } as any)
+      : null;
+
   return (
     <View
       style={[
@@ -34,21 +52,22 @@ export default function SidebarSectionHeader({
         }
       ]}
     >
-      <Text
+      <View
         style={[
-          styles.sectionHeaderText,
           styles.symbolHeaderColumn,
           isTwoColumnLayout && styles.symbolHeaderColumnTwoColumn,
-          isDarkMode && styles.sectionHeaderTextDark
+          isMobileLayout && styles.symbolHeaderColumnMobile,
+          stickySymbolWebStyle
         ]}
       >
-        종목 정보
-      </Text>
+        <Text style={[styles.sectionHeaderText, isDarkMode && styles.sectionHeaderTextDark]}>종목 정보</Text>
+      </View>
       <Text
         style={[
           styles.sectionHeaderText,
           styles.priceHeaderColumn,
           isTwoColumnLayout && styles.priceHeaderColumnTwoColumn,
+          isMobileLayout && styles.priceHeaderColumnMobile,
           isDarkMode && styles.sectionHeaderTextDark
         ]}
       >
@@ -86,42 +105,49 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1
   },
   sectionHeaderText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
     color: '#334155'
   },
   sectionHeaderTextDark: {
     color: '#cbd5e1'
   },
   symbolHeaderColumn: {
-    flex: 2.25,
+    width: SYMBOL_COLUMN_WIDTH,
     textAlign: 'left',
     paddingLeft: SYMBOL_ICON_SIZE + SYMBOL_ICON_GAP
   },
   symbolHeaderColumnTwoColumn: {
-    flex: 1.95
+    width: SYMBOL_COLUMN_WIDTH
+  },
+  symbolHeaderColumnMobile: {
+    width: SYMBOL_COLUMN_WIDTH_MOBILE,
+    paddingLeft: SYMBOL_ICON_SIZE + 6
   },
   priceHeaderColumn: {
-    flex: 1.6,
+    width: PRICE_COLUMN_WIDTH,
     textAlign: 'right'
   },
   priceHeaderColumnTwoColumn: {
-    flex: 1.85
+    width: PRICE_COLUMN_WIDTH
+  },
+  priceHeaderColumnMobile: {
+    width: PRICE_COLUMN_WIDTH_MOBILE
   },
   volumeHeaderColumn: {
-    flex: 1.1,
+    width: VOLUME_COLUMN_WIDTH,
     textAlign: 'right'
   },
   personalHeaderColumn: {
-    flex: 1.0,
+    width: FLOW_COLUMN_WIDTH,
     textAlign: 'right'
   },
   foreignHeaderColumn: {
-    flex: 1.0,
+    width: FLOW_COLUMN_WIDTH,
     textAlign: 'right'
   },
   institutionHeaderColumn: {
-    flex: 1.0,
+    width: FLOW_COLUMN_WIDTH,
     textAlign: 'right'
   }
 });

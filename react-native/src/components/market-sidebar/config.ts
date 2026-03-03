@@ -2,9 +2,21 @@ export const ROW_HEIGHT = 50;
 export const ROW_SEPARATOR_HEIGHT = 1;
 export const SECTION_HEADER_HEIGHT = 32;
 export const SYMBOL_ICON_SIZE = 32;
-export const SYMBOL_ICON_GAP = 10;
-export const LIST_HORIZONTAL_MARGIN = 6;
-export const LIST_HORIZONTAL_PADDING = 10;
+export const SYMBOL_ICON_GAP = 6;
+export const LIST_HORIZONTAL_MARGIN = 4;
+export const LIST_HORIZONTAL_PADDING = 6;
+export const SYMBOL_COLUMN_WIDTH = 142;
+export const PRICE_COLUMN_WIDTH = 92;
+export const SYMBOL_COLUMN_WIDTH_MOBILE = 132;
+export const PRICE_COLUMN_WIDTH_MOBILE = 84;
+export const VOLUME_COLUMN_WIDTH = 80;
+export const FLOW_COLUMN_WIDTH = 66;
+export const SIDEBAR_TABLE_MIN_WIDTH =
+  LIST_HORIZONTAL_PADDING * 2 +
+  SYMBOL_COLUMN_WIDTH +
+  PRICE_COLUMN_WIDTH +
+  VOLUME_COLUMN_WIDTH +
+  FLOW_COLUMN_WIDTH * 3;
 export const SCROLL_HINT_HEIGHT = 22;
 export const MIN_PANEL_WIDTH = 220;
 export const COLLAPSED_PANEL_WIDTH = 56;
