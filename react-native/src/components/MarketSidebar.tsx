@@ -8,6 +8,7 @@ import {
   FlatList,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -26,8 +27,8 @@ import {
   ROW_HEIGHT,
   ROW_SEPARATOR_HEIGHT,
   SCROLL_HINT_HEIGHT,
+  SIDEBAR_TABLE_MIN_WIDTH,
   SECTION_HEADER_HEIGHT,
-  UNFOLD_HORIZONTAL_CODEPOINT,
   type QuoteItem,
   getLayoutMode,
   mockQuotes
@@ -38,10 +39,19 @@ import { useWebTheme } from '../theme/WebThemeContext';
 
 const AnimatedIcon = Animated.createAnimatedComponent(Lucide);
 
-export default function MarketSidebar() {
+type MarketSidebarMode = 'desktop' | 'mobileCollapsedInline' | 'mobileSidebarOnly';
+
+type MarketSidebarProps = {
+  mode?: MarketSidebarMode;
+};
+
+export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) {
   const { resolvedMode, colors, trendColors } = useWebTheme();
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = React.useState(false);
+  const isMobileMode = mode !== 'desktop';
+  const isMobileCollapsedInline = mode === 'mobileCollapsedInline';
+  const isMobileSidebarOnly = mode === 'mobileSidebarOnly';
+  const [collapsed, setCollapsed] = React.useState(isMobileCollapsedInline);
   const [isResizing, setIsResizing] = React.useState(false);
   const [isResizeHandleHover, setIsResizeHandleHover] = React.useState(false);
   const [fontsLoaded] = useFonts({
@@ -49,36 +59,16 @@ export default function MarketSidebar() {
   });
   const { width } = useWindowDimensions();
   const isDarkMode = resolvedMode === 'dark';
-  const resizeCursor = React.useMemo(() => {
-    if (Platform.OS !== 'web' || typeof document === 'undefined' || !fontsLoaded) {
-      return 'ew-resize';
-    }
+  const resizeCursor = 'col-resize';
 
-    const canvas = document.createElement('canvas');
-    canvas.width = 24;
-    canvas.height = 24;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      return 'ew-resize';
-    }
-
-    const icon = String.fromCodePoint(UNFOLD_HORIZONTAL_CODEPOINT);
-    const color = isDarkMode ? '#e2e8f0' : '#1e293b';
-    ctx.clearRect(0, 0, 24, 24);
-    ctx.fillStyle = color;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '20px "Lucide"';
-    ctx.fillText(icon, 12, 12);
-
-    return `url("${canvas.toDataURL('image/png')}") 12 12, ew-resize`;
-  }, [fontsLoaded, isDarkMode]);
-
-  const [expandedPanelWidth, setExpandedPanelWidth] = React.useState(
-    Math.max(MIN_PANEL_WIDTH, Math.floor(width / 4))
+  const [expandedPanelWidth, setExpandedPanelWidth] = React.useState(() =>
+    isMobileSidebarOnly
+      ? Math.max(MIN_PANEL_WIDTH, Math.floor(width))
+      : Math.max(MIN_PANEL_WIDTH, Math.floor(width / 4))
   );
-  const maxPanelWidth = Math.max(MIN_PANEL_WIDTH, Math.floor(width * 0.55));
+  const maxPanelWidth = isMobileSidebarOnly
+    ? Math.max(MIN_PANEL_WIDTH, Math.floor(width))
+    : Math.max(MIN_PANEL_WIDTH, Math.floor(width * 0.55));
   const expandedWidthRef = React.useRef(expandedPanelWidth);
   const collapsedRef = React.useRef(collapsed);
   const resizeStartXRef = React.useRef(0);
@@ -90,9 +80,10 @@ export default function MarketSidebar() {
   const listContentHeightRef = React.useRef(0);
   const listOffsetYRef = React.useRef(0);
 
-  const panelWidthAnim = React.useRef(new Animated.Value(expandedPanelWidth)).current;
-  const titleOpacityAnim = React.useRef(new Animated.Value(1)).current;
-  const iconProgressAnim = React.useRef(new Animated.Value(0)).current;
+  const initialPanelWidth = isMobileCollapsedInline ? COLLAPSED_PANEL_WIDTH : expandedPanelWidth;
+  const panelWidthAnim = React.useRef(new Animated.Value(initialPanelWidth)).current;
+  const titleOpacityAnim = React.useRef(new Animated.Value(isMobileCollapsedInline ? 0 : 1)).current;
+  const iconProgressAnim = React.useRef(new Animated.Value(isMobileCollapsedInline ? 1 : 0)).current;
   const scrollHintWebStyle = React.useMemo(() => {
     if (Platform.OS !== 'web') return null;
 
@@ -131,6 +122,37 @@ export default function MarketSidebar() {
   React.useEffect(() => {
     collapsedRef.current = collapsed;
   }, [collapsed]);
+
+  React.useEffect(() => {
+    if (isMobileCollapsedInline) {
+      setCollapsed(true);
+      setIsResizing(false);
+      activePointerIdRef.current = null;
+      panelWidthAnim.setValue(COLLAPSED_PANEL_WIDTH);
+      titleOpacityAnim.setValue(0);
+      iconProgressAnim.setValue(1);
+      return;
+    }
+
+    if (isMobileSidebarOnly) {
+      const nextWidth = Math.max(MIN_PANEL_WIDTH, Math.floor(width));
+      setCollapsed(false);
+      setIsResizing(false);
+      setExpandedPanelWidth(nextWidth);
+      expandedWidthRef.current = nextWidth;
+      setLayoutMode(getLayoutMode(nextWidth));
+      panelWidthAnim.setValue(nextWidth);
+      titleOpacityAnim.setValue(1);
+      iconProgressAnim.setValue(0);
+    }
+  }, [
+    iconProgressAnim,
+    isMobileCollapsedInline,
+    isMobileSidebarOnly,
+    panelWidthAnim,
+    titleOpacityAnim,
+    width
+  ]);
 
   React.useEffect(() => {
     setExpandedPanelWidth((prev) => Math.max(MIN_PANEL_WIDTH, Math.min(prev, maxPanelWidth)));
@@ -194,13 +216,18 @@ export default function MarketSidebar() {
     const nextParams = { rank: String(rank), symbol } as const;
     const nextRoute = { pathname: targetPath, params: nextParams } as const;
 
+    if (isMobileMode) {
+      router.push(nextRoute);
+      return;
+    }
+
     if (pathname === targetPath) {
       router.setParams(nextParams);
       return;
     }
 
     router.push(nextRoute);
-  }, [pathname, resolveTargetPath]);
+  }, [isMobileMode, pathname, resolveTargetPath]);
 
   const applyResizeWidth = React.useCallback((clientX: number) => {
     const deltaX = clientX - resizeStartXRef.current;
@@ -327,7 +354,7 @@ export default function MarketSidebar() {
   }, [isResizeHandleHover, isResizing, resizeCursor]);
 
   const resizeHandleProps =
-    Platform.OS === 'web'
+    !isMobileMode && Platform.OS === 'web'
       ? ({
           onPointerDown: onResizeHandlePointerDown,
           onMouseEnter: () => setIsResizeHandleHover(true),
@@ -338,9 +365,15 @@ export default function MarketSidebar() {
           }
         } as any)
       : {};
-  const hideFlowColumns = layoutMode >= 1;
-  const hideVolumeColumn = layoutMode >= 2;
-  const isTwoColumnLayout = layoutMode >= 2;
+  const useHorizontalScrollLayout = true;
+  const hideFlowColumns = useHorizontalScrollLayout ? false : layoutMode >= 1;
+  const hideVolumeColumn = useHorizontalScrollLayout ? false : layoutMode >= 2;
+  const isTwoColumnLayout = useHorizontalScrollLayout ? false : layoutMode >= 2;
+  const horizontalTableWidth = React.useMemo(
+    () => Math.max(SIDEBAR_TABLE_MIN_WIDTH, expandedPanelWidth),
+    [expandedPanelWidth]
+  );
+  const effectiveLayoutMode = useHorizontalScrollLayout ? 0 : layoutMode;
   const sectionHeader = React.useMemo(
     () => (
       <SidebarSectionHeader
@@ -348,9 +381,10 @@ export default function MarketSidebar() {
         isTwoColumnLayout={isTwoColumnLayout}
         hideVolumeColumn={hideVolumeColumn}
         hideFlowColumns={hideFlowColumns}
+        isMobileLayout={isMobileSidebarOnly}
       />
     ),
-    [hideFlowColumns, hideVolumeColumn, isDarkMode, isTwoColumnLayout]
+    [hideFlowColumns, hideVolumeColumn, isDarkMode, isMobileSidebarOnly, isTwoColumnLayout]
   );
 
   const renderQuoteItem = React.useCallback(
@@ -361,7 +395,8 @@ export default function MarketSidebar() {
         isTwoColumnLayout={isTwoColumnLayout}
         hideVolumeColumn={hideVolumeColumn}
         hideFlowColumns={hideFlowColumns}
-        layoutMode={layoutMode}
+        layoutMode={effectiveLayoutMode}
+        isMobileLayout={isMobileSidebarOnly}
         detailBackground={colors.detailBackground}
         trendColors={trendColors}
         onPressQuote={onPressQuote}
@@ -372,8 +407,9 @@ export default function MarketSidebar() {
       hideFlowColumns,
       hideVolumeColumn,
       isDarkMode,
+      isMobileSidebarOnly,
       isTwoColumnLayout,
-      layoutMode,
+      effectiveLayoutMode,
       onPressQuote,
       trendColors
     ]
@@ -394,13 +430,16 @@ export default function MarketSidebar() {
     <Animated.View
       style={[
         styles.leftPanel,
+        isMobileMode && styles.leftPanelMobile,
         { width: panelWidthAnim },
-        collapsed && styles.leftPanelCollapsed
+        collapsed && styles.leftPanelCollapsed,
+        isMobileSidebarOnly && styles.leftPanelStandalone
       ]}
     >
       <View
         style={[
           styles.leftPanelSurface,
+          isMobileMode && styles.leftPanelSurfaceMobile,
           isDarkMode && styles.leftPanelSurfaceDark,
           collapsed && styles.leftPanelSurfaceCollapsed
         ]}
@@ -415,56 +454,106 @@ export default function MarketSidebar() {
           <Animated.View style={[styles.leftPanelTitleWrap, { opacity: titleOpacityAnim }]}>
             <Text style={[styles.leftPanelTitle, isDarkMode && styles.leftPanelTitleDark]}>시세</Text>
           </Animated.View>
-          <Pressable
-            style={[
-              styles.collapseButton,
-              isDarkMode && styles.collapseButtonDark,
-              collapsed && styles.collapseButtonCollapsed
-            ]}
-            onPress={() => setCollapsed((prev) => !prev)}
-          >
-            {fontsLoaded ? (
-              <AnimatedIcon
-                name="panel-right"
-                size={18}
-                style={[styles.collapseIcon, isDarkMode && styles.collapseIconDark, { transform: [{ rotate: iconRotate }] }]}
-              />
-            ) : (
-              <View style={styles.iconPlaceholder} />
-            )}
-          </Pressable>
+          {!isMobileMode && (
+            <Pressable
+              style={[
+                styles.collapseButton,
+                isDarkMode && styles.collapseButtonDark,
+                collapsed && styles.collapseButtonCollapsed
+              ]}
+              onPress={() => {
+                setCollapsed((prev) => !prev);
+              }}
+            >
+              {fontsLoaded ? (
+                <AnimatedIcon
+                  name="panel-right"
+                  size={18}
+                  style={[
+                    styles.collapseIcon,
+                    isDarkMode && styles.collapseIconDark,
+                    { transform: [{ rotate: iconRotate }] }
+                  ]}
+                />
+              ) : (
+                <View style={styles.iconPlaceholder} />
+              )}
+            </Pressable>
+          )}
         </View>
 
-        {!collapsed && (
-          <FlatList
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
-            data={mockQuotes}
-            onLayout={(event) => {
-              listViewportHeightRef.current = event.nativeEvent.layout.height;
-              syncScrollHint();
-            }}
-            onContentSizeChange={(_, height) => {
-              listContentHeightRef.current = height;
-              syncScrollHint();
-            }}
-            onScroll={(event) => {
-              listOffsetYRef.current = event.nativeEvent.contentOffset.y;
-              syncScrollHint();
-            }}
-            ListHeaderComponent={sectionHeader}
-            stickyHeaderIndices={[0]}
-            renderItem={renderQuoteItem}
-            keyExtractor={keyExtractor}
-            getItemLayout={getItemLayout}
-            ItemSeparatorComponent={() => <View style={[styles.listSeparator, isDarkMode && styles.listSeparatorDark]} />}
-            removeClippedSubviews={Platform.OS !== 'web'}
-            initialNumToRender={24}
-            maxToRenderPerBatch={24}
-            updateCellsBatchingPeriod={16}
-            windowSize={12}
-          />
-        )}
+        {!collapsed &&
+          (useHorizontalScrollLayout ? (
+            <ScrollView
+              horizontal
+              style={styles.horizontalScrollWrap}
+              contentContainerStyle={styles.horizontalScrollContent}
+              showsHorizontalScrollIndicator
+              bounces={false}
+            >
+              <View style={[styles.horizontalScrollInner, { width: horizontalTableWidth }]}>
+                <FlatList
+                  style={styles.list}
+                  contentContainerStyle={styles.listContent}
+                  data={mockQuotes}
+                  onLayout={(event) => {
+                    listViewportHeightRef.current = event.nativeEvent.layout.height;
+                    syncScrollHint();
+                  }}
+                  onContentSizeChange={(_, height) => {
+                    listContentHeightRef.current = height;
+                    syncScrollHint();
+                  }}
+                  onScroll={(event) => {
+                    listOffsetYRef.current = event.nativeEvent.contentOffset.y;
+                    syncScrollHint();
+                  }}
+                  ListHeaderComponent={sectionHeader}
+                  stickyHeaderIndices={[0]}
+                  renderItem={renderQuoteItem}
+                  keyExtractor={keyExtractor}
+                  getItemLayout={getItemLayout}
+                  ItemSeparatorComponent={() => (
+                    <View style={[styles.listSeparator, isDarkMode && styles.listSeparatorDark]} />
+                  )}
+                  removeClippedSubviews={Platform.OS !== 'web'}
+                  initialNumToRender={24}
+                  maxToRenderPerBatch={24}
+                  updateCellsBatchingPeriod={16}
+                  windowSize={12}
+                />
+              </View>
+            </ScrollView>
+          ) : (
+            <FlatList
+              style={styles.list}
+              contentContainerStyle={styles.listContent}
+              data={mockQuotes}
+              onLayout={(event) => {
+                listViewportHeightRef.current = event.nativeEvent.layout.height;
+                syncScrollHint();
+              }}
+              onContentSizeChange={(_, height) => {
+                listContentHeightRef.current = height;
+                syncScrollHint();
+              }}
+              onScroll={(event) => {
+                listOffsetYRef.current = event.nativeEvent.contentOffset.y;
+                syncScrollHint();
+              }}
+              ListHeaderComponent={sectionHeader}
+              stickyHeaderIndices={[0]}
+              renderItem={renderQuoteItem}
+              keyExtractor={keyExtractor}
+              getItemLayout={getItemLayout}
+              ItemSeparatorComponent={() => <View style={[styles.listSeparator, isDarkMode && styles.listSeparatorDark]} />}
+              removeClippedSubviews={Platform.OS !== 'web'}
+              initialNumToRender={24}
+              maxToRenderPerBatch={24}
+              updateCellsBatchingPeriod={16}
+              windowSize={12}
+            />
+          ))}
 
         {!collapsed && showBottomScrollHint && (
           <View
@@ -478,10 +567,12 @@ export default function MarketSidebar() {
         )}
       </View>
 
-      <View
-        style={[styles.resizeHandleHitBox, { backgroundColor: colors.pageBackground }]}
-        {...resizeHandleProps}
-      />
+      {!isMobileMode && (
+        <View
+          style={[styles.resizeHandleHitBox, { backgroundColor: colors.pageBackground }]}
+          {...resizeHandleProps}
+        />
+      )}
     </Animated.View>
   );
 }
@@ -495,11 +586,22 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 40
   },
+  leftPanelMobile: {
+    marginLeft: 0,
+    marginRight: 0,
+    marginBottom: 0
+  },
+  leftPanelStandalone: {
+    marginRight: 0
+  },
   leftPanelSurface: {
     flex: 1,
     borderRadius: 20,
     backgroundColor: LIGHT_SIDEBAR_BACKGROUND,
     overflow: 'hidden'
+  },
+  leftPanelSurfaceMobile: {
+    borderRadius: 0
   },
   leftPanelSurfaceDark: {
     backgroundColor: '#212429'
@@ -571,6 +673,15 @@ const styles = StyleSheet.create({
     height: 18
   },
   list: {
+    flex: 1
+  },
+  horizontalScrollWrap: {
+    flex: 1
+  },
+  horizontalScrollContent: {
+    minHeight: '100%'
+  },
+  horizontalScrollInner: {
     flex: 1
   },
   listContent: {

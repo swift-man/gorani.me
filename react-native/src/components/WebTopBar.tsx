@@ -1,8 +1,10 @@
 import React from 'react';
-import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useFonts } from 'expo-font';
+import { Image, Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { router, usePathname } from 'expo-router';
+import { Lucide } from '@react-native-vector-icons/lucide';
+import { router, useGlobalSearchParams, usePathname } from 'expo-router';
 
 import {
   PRICE_COLOR_STYLE_ORDER,
@@ -12,6 +14,7 @@ import { sections } from '../screens/types';
 import { type PriceColorStyle, type ThemeMode, useWebTheme } from '../theme/WebThemeContext';
 
 const BRAND_ICON = require('../assets/gorani.png');
+const MOBILE_WEB_BREAKPOINT = 900;
 const THEME_MODE_ORDER: ThemeMode[] = ['light', 'dark', 'system'];
 const THEME_MODE_LABELS: Record<ThemeMode, string> = {
   light: '밝은 모드',
@@ -19,8 +22,23 @@ const THEME_MODE_LABELS: Record<ThemeMode, string> = {
   system: '기기'
 };
 
+const getFirstString = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value;
+
+const isMarketRoutePath = (pathname: string) =>
+  pathname.startsWith('/prices') || pathname.startsWith('/prediction') || pathname.startsWith('/news');
+
 export default function WebTopBar() {
   const pathname = usePathname();
+  const params = useGlobalSearchParams<{
+    symbol?: string | string[];
+    rank?: string | string[];
+    mobileSidebar?: string | string[];
+  }>();
+  const { width } = useWindowDimensions();
+  const [fontsLoaded] = useFonts({
+    Lucide: require('@react-native-vector-icons/lucide/fonts/Lucide.ttf')
+  });
   const {
     themeMode,
     setThemeMode,
@@ -37,8 +55,15 @@ export default function WebTopBar() {
   const [colorSubmenuOpen, setColorSubmenuOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const isProfileRoot = pathname === '/profile' || pathname === '/profile/';
+  const isBrandSelected =
+    pathname === '/' || pathname === '/prices' || pathname.startsWith('/prices/');
   const tabSelectedBackground = resolvedMode === 'dark' ? '#ffffff' : colors.selectedTabBackground;
   const tabSelectedText = resolvedMode === 'dark' ? '#0f172a' : '#ffffff';
+  const isMobileWeb = width <= MOBILE_WEB_BREAKPOINT;
+  const isMarketRoute = isMarketRoutePath(pathname);
+  const mobileSidebarRaw = getFirstString(params.mobileSidebar);
+  const isMobileSidebarView = mobileSidebarRaw === '1' || mobileSidebarRaw === 'true';
+  const showMobileCollapseButton = isMobileWeb && isMarketRoute;
 
   React.useEffect(() => {
     setSettingsOpen(false);
@@ -63,14 +88,63 @@ export default function WebTopBar() {
     setSettingsOpen(false);
   };
 
+  const handleMobileCollapsePress = React.useCallback(() => {
+    const nextParams: Record<string, string> = {};
+    const symbol = getFirstString(params.symbol);
+    const rank = getFirstString(params.rank);
+
+    if (symbol) nextParams.symbol = symbol;
+    if (rank) nextParams.rank = rank;
+    if (!isMobileSidebarView) {
+      nextParams.mobileSidebar = '1';
+    }
+
+    if (Object.keys(nextParams).length === 0) {
+      router.push(pathname);
+      return;
+    }
+
+    router.push({ pathname, params: nextParams } as any);
+  }, [isMobileSidebarView, params.rank, params.symbol, pathname]);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.topBarBackground }]}>
-      <Pressable style={styles.brandButton} onPress={() => router.push('/')}>
+      {showMobileCollapseButton && (
+        <Pressable
+          style={[
+            styles.mobileCollapseButton,
+            {
+              backgroundColor: colors.iconButtonBackground,
+              borderColor: resolvedMode === 'dark' ? '#36363B' : '#e2e8f0'
+            }
+          ]}
+          onPress={handleMobileCollapsePress}
+        >
+          {fontsLoaded ? (
+            <Lucide
+              name="panel-right"
+              size={16}
+              color={colors.textPrimary}
+              style={isMobileSidebarView && styles.mobileCollapseButtonIconOpen}
+            />
+          ) : (
+            <View style={styles.mobileCollapseButtonIconPlaceholder} />
+          )}
+        </Pressable>
+      )}
+      <Pressable
+        style={[
+          styles.brandButton,
+          isBrandSelected && styles.brandButtonSelected,
+          isBrandSelected && { backgroundColor: tabSelectedBackground }
+        ]}
+        onPress={() => router.push('/prices')}
+      >
         <Image source={BRAND_ICON} style={styles.brandIcon} />
       </Pressable>
 
       {sections
-        .filter((section) => section.key !== 'profile')
+        .filter((section) => section.key !== 'profile' && section.key !== 'prices')
         .map((section) => {
           const selected =
             pathname === section.webPath || pathname.startsWith(`${section.webPath}/`);
@@ -88,8 +162,6 @@ export default function WebTopBar() {
           );
         })}
 
-      <View style={styles.rightSpacer} />
-
       <Pressable
         style={[
           styles.searchTrigger,
@@ -106,31 +178,47 @@ export default function WebTopBar() {
         </Text>
       </Pressable>
 
-      <View style={styles.settingsWrap}>
+      {!isMobileWeb && (
         <Pressable
           style={[
-            styles.iconButton,
-            { backgroundColor: colors.iconButtonBackground },
-            settingsOpen && { backgroundColor: colors.selectedTabBackground }
-          ]}
-          onPress={() => {
-            setSettingsOpen((prev) => !prev);
-            if (settingsOpen) {
-              setThemeSubmenuOpen(false);
-              setColorSubmenuOpen(false);
+            styles.downloadButton,
+            {
+              backgroundColor: resolvedMode === 'dark' ? '#2c313b' : '#f8fafc',
+              borderColor: resolvedMode === 'dark' ? '#36363B' : '#e2e8f0'
             }
-          }}
+          ]}
         >
-          <Ionicons name="settings" size={18} color={settingsOpen ? '#ffffff' : colors.textPrimary} />
+          <MaterialCommunityIcons name="qrcode-scan" size={16} color={colors.textPrimary} />
+          <Text style={[styles.downloadButtonText, { color: colors.textPrimary }]}>앱 다운로드</Text>
         </Pressable>
+      )}
 
-        {settingsOpen && (
-          <View
+      {!isMobileWeb && (
+        <View style={styles.settingsWrap}>
+          <Pressable
             style={[
-              styles.settingsMenu,
-              { backgroundColor: colors.menuBackground, borderColor: colors.menuBorder }
+              styles.iconButton,
+              { backgroundColor: colors.iconButtonBackground },
+              settingsOpen && { backgroundColor: colors.selectedTabBackground }
             ]}
+            onPress={() => {
+              setSettingsOpen((prev) => !prev);
+              if (settingsOpen) {
+                setThemeSubmenuOpen(false);
+                setColorSubmenuOpen(false);
+              }
+            }}
           >
+            <Ionicons name="settings" size={18} color={settingsOpen ? '#ffffff' : colors.textPrimary} />
+          </Pressable>
+
+          {settingsOpen && (
+            <View
+              style={[
+                styles.settingsMenu,
+                { backgroundColor: colors.menuBackground, borderColor: colors.menuBorder }
+              ]}
+            >
             <View style={styles.menuRowWrap}>
               <Pressable
                 style={[
@@ -259,9 +347,10 @@ export default function WebTopBar() {
                 </View>
               )}
             </View>
-          </View>
-        )}
-      </View>
+            </View>
+          )}
+        </View>
+      )}
 
       <Pressable
         style={[
@@ -316,12 +405,32 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
     zIndex: 20
   },
+  mobileCollapseButton: {
+    height: 36,
+    width: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8
+  },
+  mobileCollapseButtonIconOpen: {
+    transform: [{ rotate: '180deg' }]
+  },
+  mobileCollapseButtonIconPlaceholder: {
+    width: 16,
+    height: 16
+  },
   brandButton: {
     width: 36,
     height: 36,
     borderRadius: 10,
     overflow: 'hidden',
     marginRight: 10
+  },
+  brandButtonSelected: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1'
   },
   brandIcon: {
     width: '100%',
@@ -337,9 +446,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600'
   },
-  rightSpacer: {
-    flex: 1
-  },
   settingsWrap: {
     position: 'relative',
     marginLeft: 8,
@@ -347,20 +453,35 @@ const styles = StyleSheet.create({
   },
   searchTrigger: {
     height: 36,
-    minWidth: 200,
-    maxWidth: 260,
+    flex: 1,
     borderRadius: 18,
     borderWidth: 1,
     paddingLeft: 12,
     paddingRight: 14,
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 8,
     marginRight: 8
   },
   searchPlaceholder: {
     marginLeft: 8,
     fontSize: 14,
     fontWeight: '500'
+  },
+  downloadButton: {
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingLeft: 12,
+    paddingRight: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8
+  },
+  downloadButtonText: {
+    marginLeft: 6,
+    fontSize: 13,
+    fontWeight: '600'
   },
   iconButton: {
     width: 36,

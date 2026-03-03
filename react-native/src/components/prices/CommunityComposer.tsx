@@ -11,6 +11,7 @@ type AttachedImage = {
 type CommunityComposerProps = {
   isDarkMode: boolean;
   backgroundColor: string;
+  isMobileWeb?: boolean;
 };
 
 const MAX_ATTACHMENTS = 2;
@@ -40,7 +41,8 @@ const makeAttachmentId = () => `${Date.now()}-${Math.random().toString(36).slice
 
 export default function CommunityComposer({
   isDarkMode,
-  backgroundColor
+  backgroundColor,
+  isMobileWeb = false
 }: CommunityComposerProps) {
   const [inputValue, setInputValue] = React.useState('');
   const [inputMeasureWidth, setInputMeasureWidth] = React.useState(0);
@@ -321,7 +323,7 @@ export default function CommunityComposer({
       : {};
 
   return (
-    <View style={styles.composerOuter}>
+    <View style={[styles.composerOuter, isMobileWeb && styles.composerOuterMobile]}>
       <View
         ref={dropZoneRef}
         style={[
@@ -415,6 +417,9 @@ const styles = StyleSheet.create({
   composerOuter: {
     paddingHorizontal: 18,
     paddingBottom: 18
+  },
+  composerOuterMobile: {
+    paddingHorizontal: 0
   },
   composerInner: {
     height: 48,

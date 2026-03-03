@@ -1,14 +1,20 @@
 import React from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { getStockIconUri } from '../../constants/stockIcons';
 import {
+  FLOW_COLUMN_WIDTH,
   LIGHT_SIDEBAR_BACKGROUND,
   LIST_HORIZONTAL_MARGIN,
   LIST_HORIZONTAL_PADDING,
+  PRICE_COLUMN_WIDTH,
+  PRICE_COLUMN_WIDTH_MOBILE,
   ROW_HEIGHT,
+  SYMBOL_COLUMN_WIDTH,
+  SYMBOL_COLUMN_WIDTH_MOBILE,
   SYMBOL_ICON_GAP,
   SYMBOL_ICON_SIZE,
+  VOLUME_COLUMN_WIDTH,
   type LayoutMode,
   type QuoteItem
 } from './config';
@@ -20,6 +26,7 @@ type SidebarQuoteRowProps = {
   hideVolumeColumn: boolean;
   hideFlowColumns: boolean;
   layoutMode: LayoutMode;
+  isMobileLayout?: boolean;
   detailBackground: string;
   trendColors: {
     rise: string;
@@ -45,6 +52,7 @@ export default function SidebarQuoteRow({
   hideVolumeColumn,
   hideFlowColumns,
   layoutMode,
+  isMobileLayout = false,
   detailBackground,
   trendColors,
   onPressQuote
@@ -59,6 +67,22 @@ export default function SidebarQuoteRow({
         : isDarkMode
           ? '#cbd5e1'
           : '#64748b';
+  const stickySymbolWebStyle =
+    Platform.OS === 'web'
+      ? ({
+          position: 'sticky',
+          left: 0,
+          zIndex: 3,
+          backgroundColor: isDarkMode ? detailBackground : LIGHT_SIDEBAR_BACKGROUND
+        } as any)
+      : null;
+  const noWrapOverflowWebStyle =
+    Platform.OS === 'web'
+      ? ({
+          whiteSpace: 'nowrap',
+          overflow: 'visible'
+        } as any)
+      : null;
 
   return (
     <Pressable
@@ -68,7 +92,14 @@ export default function SidebarQuoteRow({
         { backgroundColor: isDarkMode ? detailBackground : LIGHT_SIDEBAR_BACKGROUND }
       ]}
     >
-      <View style={[styles.symbolColumn, isTwoColumnLayout && styles.symbolColumnTwoColumn]}>
+      <View
+        style={[
+          styles.symbolColumn,
+          isTwoColumnLayout && styles.symbolColumnTwoColumn,
+          isMobileLayout && styles.symbolColumnMobile,
+          stickySymbolWebStyle
+        ]}
+      >
         <View style={styles.symbolIcon}>
           <Image source={{ uri: stockIconUri }} style={styles.symbolIconImage} />
         </View>
@@ -78,10 +109,9 @@ export default function SidebarQuoteRow({
               style={[
                 styles.symbolNameTop,
                 isDarkMode && styles.symbolNameTopDark,
-                layoutMode >= 3 && styles.symbolNameTopCompact
+                layoutMode >= 3 && styles.symbolNameTopCompact,
+                noWrapOverflowWebStyle
               ]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
             >
               {item.stockName}
             </Text>
@@ -94,16 +124,22 @@ export default function SidebarQuoteRow({
               />
             ) : null}
           </View>
-          <Text style={[styles.symbol, isDarkMode && styles.symbolDark]} numberOfLines={1}>
+          <Text style={[styles.symbol, isDarkMode && styles.symbolDark, noWrapOverflowWebStyle]}>
             {item.symbol}
           </Text>
         </View>
       </View>
-      <View style={[styles.priceInfoColumn, isTwoColumnLayout && styles.priceInfoColumnTwoColumn]}>
-        <Text style={[styles.priceTop, priceChangeColorStyle]} numberOfLines={1}>
+      <View
+        style={[
+          styles.priceInfoColumn,
+          isTwoColumnLayout && styles.priceInfoColumnTwoColumn,
+          isMobileLayout && styles.priceInfoColumnMobile
+        ]}
+      >
+        <Text style={[styles.priceTop, priceChangeColorStyle, noWrapOverflowWebStyle]}>
           {item.currentPrice}
         </Text>
-        <Text style={[styles.priceBottom, priceChangeColorStyle]} numberOfLines={1}>
+        <Text style={[styles.priceBottom, priceChangeColorStyle, noWrapOverflowWebStyle]}>
           {item.changeAmount} {item.changePercent}
         </Text>
       </View>
@@ -161,15 +197,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: LIST_HORIZONTAL_PADDING,
-    marginHorizontal: LIST_HORIZONTAL_MARGIN
+    marginHorizontal: LIST_HORIZONTAL_MARGIN,
+    overflow: 'visible'
   },
   symbolColumn: {
-    flex: 2.25,
+    width: SYMBOL_COLUMN_WIDTH,
     flexDirection: 'row',
     alignItems: 'center'
   },
   symbolColumnTwoColumn: {
-    flex: 1.95
+    width: SYMBOL_COLUMN_WIDTH
+  },
+  symbolColumnMobile: {
+    width: SYMBOL_COLUMN_WIDTH_MOBILE
   },
   symbolIcon: {
     width: SYMBOL_ICON_SIZE,
@@ -188,12 +228,13 @@ const styles = StyleSheet.create({
   symbolMeta: {
     minWidth: 0,
     flex: 1,
-    justifyContent: 'center'
+    justifyContent: 'center',
+    overflow: 'visible'
   },
   symbolMetaTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 1
+    marginBottom: 0
   },
   symbolNameTopIcon: {
     marginLeft: 4
@@ -202,7 +243,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#64748b',
-    flexShrink: 1
+    flexShrink: 0
   },
   symbolNameTopCompact: {
     maxWidth: 74
@@ -214,60 +255,63 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#0f172a',
-    flexShrink: 1
+    flexShrink: 0
   },
   symbolDark: {
     color: '#e2e8f0'
   },
   priceInfoColumn: {
-    flex: 1.6,
+    width: PRICE_COLUMN_WIDTH,
     alignItems: 'flex-end',
     justifyContent: 'center'
   },
   priceInfoColumnTwoColumn: {
-    flex: 1.85
+    width: PRICE_COLUMN_WIDTH
+  },
+  priceInfoColumnMobile: {
+    width: PRICE_COLUMN_WIDTH_MOBILE
   },
   priceTop: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
     color: '#0f172a'
   },
   priceBottom: {
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 1
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 0
   },
   volumeInfoColumn: {
-    flex: 1.1,
+    width: VOLUME_COLUMN_WIDTH,
     alignItems: 'flex-end',
     justifyContent: 'center'
   },
   personalInfoColumn: {
-    flex: 1.0,
+    width: FLOW_COLUMN_WIDTH,
     alignItems: 'flex-end',
     justifyContent: 'center'
   },
   foreignInfoColumn: {
-    flex: 1.0,
+    width: FLOW_COLUMN_WIDTH,
     alignItems: 'flex-end',
     justifyContent: 'center'
   },
   institutionInfoColumn: {
-    flex: 1.0,
+    width: FLOW_COLUMN_WIDTH,
     alignItems: 'flex-end',
     justifyContent: 'center'
   },
   metricValue: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#334155'
   },
   metricValueDark: {
     color: '#e2e8f0'
   },
   metricSignedValue: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#334155'
   },
   neutralValueLight: {
