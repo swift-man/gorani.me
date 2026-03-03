@@ -1,4 +1,4 @@
-export type SectionKey = 'prices' | 'community' | 'news' | 'profile';
+export type SectionKey = 'prices' | 'prediction' | 'news' | 'profile';
 
 export type SectionConfig = {
   key: SectionKey;
@@ -8,7 +8,14 @@ export type SectionConfig = {
 
 export const sections: SectionConfig[] = [
   { key: 'prices', title: '시세', webPath: '/prices' },
-  { key: 'community', title: '커뮤니티', webPath: '/community' },
+  { key: 'prediction', title: '예측', webPath: '/prediction' },
   { key: 'news', title: '뉴스', webPath: '/news' },
   { key: 'profile', title: '내 정보', webPath: '/profile' }
 ];
+
+export const sectionByKey: Record<SectionKey, SectionConfig> = {
+  prices: { key: 'prices', title: '시세', webPath: '/prices' },
+  prediction: { key: 'prediction', title: '예측', webPath: '/prediction' },
+  news: { key: 'news', title: '뉴스', webPath: '/news' },
+  profile: { key: 'profile', title: '내 정보', webPath: '/profile' }
+};
