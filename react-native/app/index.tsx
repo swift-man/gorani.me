@@ -2,5 +2,5 @@ import React from 'react';
 import { Redirect } from 'expo-router';
 
 export default function IndexRedirect() {
-  return <Redirect href="/prices" />;
+  return <Redirect href="/communities" />;
 }

@@ -26,13 +26,17 @@ const getFirstString = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 
 const isMarketRoutePath = (pathname: string) =>
-  pathname.startsWith('/prices') || pathname.startsWith('/prediction') || pathname.startsWith('/news');
+  pathname.startsWith('/communities') ||
+  pathname.startsWith('/prices') ||
+  pathname.startsWith('/prediction') ||
+  pathname.startsWith('/news');
 
 export default function WebTopBar() {
   const pathname = usePathname();
   const params = useGlobalSearchParams<{
     symbol?: string | string[];
-    rank?: string | string[];
+    sector?: string | string[];
+    sectorName?: string | string[];
     mobileSidebar?: string | string[];
   }>();
   const { width } = useWindowDimensions();
@@ -56,7 +60,11 @@ export default function WebTopBar() {
   const [searchOpen, setSearchOpen] = React.useState(false);
   const isProfileRoot = pathname === '/profile' || pathname === '/profile/';
   const isBrandSelected =
-    pathname === '/' || pathname === '/prices' || pathname.startsWith('/prices/');
+    pathname === '/' ||
+    pathname === '/communities' ||
+    pathname.startsWith('/communities/') ||
+    pathname === '/prices' ||
+    pathname.startsWith('/prices/');
   const tabSelectedBackground = resolvedMode === 'dark' ? '#ffffff' : colors.selectedTabBackground;
   const tabSelectedText = resolvedMode === 'dark' ? '#0f172a' : '#ffffff';
   const isMobileWeb = width <= MOBILE_WEB_BREAKPOINT;
@@ -91,10 +99,12 @@ export default function WebTopBar() {
   const handleMobileCollapsePress = React.useCallback(() => {
     const nextParams: Record<string, string> = {};
     const symbol = getFirstString(params.symbol);
-    const rank = getFirstString(params.rank);
+    const sector = getFirstString(params.sector);
+    const sectorName = getFirstString(params.sectorName);
 
     if (symbol) nextParams.symbol = symbol;
-    if (rank) nextParams.rank = rank;
+    if (sector) nextParams.sector = sector;
+    if (sectorName) nextParams.sectorName = sectorName;
     if (!isMobileSidebarView) {
       nextParams.mobileSidebar = '1';
     }
@@ -105,7 +115,7 @@ export default function WebTopBar() {
     }
 
     router.push({ pathname, params: nextParams } as any);
-  }, [isMobileSidebarView, params.rank, params.symbol, pathname]);
+  }, [isMobileSidebarView, params.sector, params.sectorName, params.symbol, pathname]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.topBarBackground }]}>
@@ -138,7 +148,7 @@ export default function WebTopBar() {
           isBrandSelected && styles.brandButtonSelected,
           isBrandSelected && { backgroundColor: tabSelectedBackground }
         ]}
-        onPress={() => router.push('/prices')}
+        onPress={() => router.push('/communities')}
       >
         <Image source={BRAND_ICON} style={styles.brandIcon} />
       </Pressable>

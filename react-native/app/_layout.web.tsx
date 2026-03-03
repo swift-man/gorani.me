@@ -14,6 +14,7 @@ const getFirstString = (value: string | string[] | undefined) =>
 
 function shouldShowMarketSidebar(pathname: string) {
   return (
+    pathname.startsWith('/communities') ||
     pathname.startsWith('/prices') ||
     pathname.startsWith('/prediction') ||
     pathname.startsWith('/news')
@@ -24,7 +25,8 @@ function WebRootLayoutInner() {
   const pathname = usePathname();
   const params = useGlobalSearchParams<{
     symbol?: string | string[];
-    rank?: string | string[];
+    sector?: string | string[];
+    sectorName?: string | string[];
     mobileSidebar?: string | string[];
   }>();
   const { width } = useWindowDimensions();
@@ -79,16 +81,18 @@ function WebRootLayoutInner() {
     if (enteredMobileWeb && isMobileSidebarView) {
       const nextParams: Record<string, string> = {};
       const symbol = getFirstString(params.symbol);
-      const rank = getFirstString(params.rank);
+      const sector = getFirstString(params.sector);
+      const sectorName = getFirstString(params.sectorName);
 
       if (symbol) nextParams.symbol = symbol;
-      if (rank) nextParams.rank = rank;
+      if (sector) nextParams.sector = sector;
+      if (sectorName) nextParams.sectorName = sectorName;
 
       router.replace({ pathname, params: nextParams } as any);
     }
 
     prevIsMobileWebRef.current = isMobileWeb;
-  }, [isMobileSidebarView, isMobileWeb, params.rank, params.symbol, pathname]);
+  }, [isMobileSidebarView, isMobileWeb, params.sector, params.sectorName, params.symbol, pathname]);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.pageBackground }]}>
