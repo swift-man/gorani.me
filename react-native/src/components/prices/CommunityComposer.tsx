@@ -62,6 +62,18 @@ export default function CommunityComposer({
           boxShadow: 'none'
         } as any)
       : null;
+  const composerBackdropGradientWebStyle = React.useMemo(
+    () =>
+      Platform.OS === 'web'
+        ? ({
+            backgroundColor: 'transparent',
+            backgroundImage: isDarkMode
+              ? 'linear-gradient(180deg, rgba(33,36,41,0) 0%, rgba(33,36,41,0.84) 100%)'
+              : 'linear-gradient(180deg, rgba(237,237,247,0) 0%, rgba(226,229,242,0.84) 100%)'
+          } as any)
+        : null,
+    [isDarkMode]
+  );
 
   const hasAttachments = attachedImages.length > 0;
   const isSendEnabled = inputValue.trim().length > 0;
@@ -323,89 +335,91 @@ export default function CommunityComposer({
       : {};
 
   return (
-    <View style={[styles.composerOuter, isMobileWeb && styles.composerOuterMobile]}>
-      <View
-        ref={dropZoneRef}
-        style={[
-          styles.composerInner,
-          isDarkMode && styles.composerInnerDark,
-          hasAttachments && styles.composerInnerExpanded,
-          { backgroundColor, height: composerHeight },
-          isInputFocused && (isDarkMode ? styles.composerInnerFocusedDark : styles.composerInnerFocused),
-          isDragOver && styles.composerInnerDragOver
-        ]}
-        {...dropZoneProps}
-      >
-        {hasAttachments && (
-          <View style={styles.attachmentPreviewRow}>
-            {attachedImages.map((image, index) => (
-              <View
-                key={image.id}
+    <View style={[styles.composerBackdrop, composerBackdropGradientWebStyle]}>
+      <View style={[styles.composerOuter, isMobileWeb && styles.composerOuterMobile]}>
+        <View
+          ref={dropZoneRef}
+          style={[
+            styles.composerInner,
+            isDarkMode && styles.composerInnerDark,
+            hasAttachments && styles.composerInnerExpanded,
+            { backgroundColor, height: composerHeight },
+            isInputFocused && (isDarkMode ? styles.composerInnerFocusedDark : styles.composerInnerFocused),
+            isDragOver && styles.composerInnerDragOver
+          ]}
+          {...dropZoneProps}
+        >
+          {hasAttachments && (
+            <View style={styles.attachmentPreviewRow}>
+              {attachedImages.map((image, index) => (
+                <View
+                  key={image.id}
+                  style={[
+                    styles.attachmentPreviewWrap,
+                    index < attachedImages.length - 1 && styles.attachmentPreviewGap
+                  ]}
+                >
+                  <Image source={{ uri: image.uri }} style={styles.attachmentPreview} resizeMode="contain" />
+                  <Pressable
+                    style={[
+                      styles.attachmentRemoveButton,
+                      isDarkMode && styles.attachmentRemoveButtonDark
+                    ]}
+                    onPress={() => clearAttachedImage(image.id)}
+                  >
+                    <Ionicons name="close" size={14} color={isDarkMode ? '#e5e7eb' : '#111827'} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <View style={[styles.composerBottomRow, { height: textRowHeight }]}>
+            <TextInput
+              value={inputValue}
+              onChangeText={setInputValue}
+              onLayout={(event) => {
+                const width = event?.nativeEvent?.layout?.width;
+                if (typeof width === 'number' && width > 0) {
+                  setInputMeasureWidth(width);
+                }
+              }}
+              multiline
+              scrollEnabled={false}
+              onFocus={(event: any) => {
+                setIsInputFocused(true);
+
+                if (Platform.OS === 'web') {
+                  const target = event?.target;
+                  if (target && target.style) {
+                    target.style.outline = 'none';
+                    target.style.boxShadow = 'none';
+                    target.style.border = '0';
+                  }
+                }
+              }}
+              onBlur={() => setIsInputFocused(false)}
+              placeholder="입력을 시작하세요..."
+              placeholderTextColor={isDarkMode ? '#8f96a3' : '#94a3b8'}
+              style={[styles.composerInput, isDarkMode && styles.composerInputDark, webInputFocusResetStyle]}
+            />
+            <View style={styles.composerRight}>
+              <Pressable
+                disabled={!isSendEnabled}
                 style={[
-                  styles.attachmentPreviewWrap,
-                  index < attachedImages.length - 1 && styles.attachmentPreviewGap
+                  styles.submitButton,
+                  isDarkMode && styles.submitButtonDark,
+                  isSendEnabled && (isDarkMode ? styles.submitButtonActiveDark : styles.submitButtonActive)
                 ]}
               >
-                <Image source={{ uri: image.uri }} style={styles.attachmentPreview} resizeMode="contain" />
-                <Pressable
-                  style={[
-                    styles.attachmentRemoveButton,
-                    isDarkMode && styles.attachmentRemoveButtonDark
-                  ]}
-                  onPress={() => clearAttachedImage(image.id)}
-                >
-                  <Ionicons name="close" size={14} color={isDarkMode ? '#e5e7eb' : '#111827'} />
-                </Pressable>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <View style={[styles.composerBottomRow, { height: textRowHeight }]}>
-          <TextInput
-            value={inputValue}
-            onChangeText={setInputValue}
-            onLayout={(event) => {
-              const width = event?.nativeEvent?.layout?.width;
-              if (typeof width === 'number' && width > 0) {
-                setInputMeasureWidth(width);
-              }
-            }}
-            multiline
-            scrollEnabled={false}
-            onFocus={(event: any) => {
-              setIsInputFocused(true);
-
-              if (Platform.OS === 'web') {
-                const target = event?.target;
-                if (target && target.style) {
-                  target.style.outline = 'none';
-                  target.style.boxShadow = 'none';
-                  target.style.border = '0';
-                }
-              }
-            }}
-            onBlur={() => setIsInputFocused(false)}
-            placeholder="입력을 시작하세요..."
-            placeholderTextColor={isDarkMode ? '#8f96a3' : '#94a3b8'}
-            style={[styles.composerInput, isDarkMode && styles.composerInputDark, webInputFocusResetStyle]}
-          />
-          <View style={styles.composerRight}>
-            <Pressable
-              disabled={!isSendEnabled}
-              style={[
-                styles.submitButton,
-                isDarkMode && styles.submitButtonDark,
-                isSendEnabled && (isDarkMode ? styles.submitButtonActiveDark : styles.submitButtonActive)
-              ]}
-            >
-              <Ionicons
-                name="arrow-forward"
-                size={32}
-                style={styles.submitIcon}
-                color={isDarkMode ? (isSendEnabled ? '#ffffff' : '#9aa1ad') : '#000000'}
-              />
-            </Pressable>
+                <Ionicons
+                  name="arrow-forward"
+                  size={32}
+                  style={styles.submitIcon}
+                  color={isDarkMode ? (isSendEnabled ? '#ffffff' : '#9aa1ad') : '#000000'}
+                />
+              </Pressable>
+            </View>
           </View>
         </View>
       </View>
@@ -414,6 +428,10 @@ export default function CommunityComposer({
 }
 
 const styles = StyleSheet.create({
+  composerBackdrop: {
+    width: '100%',
+    paddingTop: 12
+  },
   composerOuter: {
     paddingHorizontal: 18,
     paddingBottom: 18

@@ -5,47 +5,36 @@ import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import MarketSidebar from '../src/components/MarketSidebar';
 import WebTopBar from '../src/components/WebTopBar';
+import { isMarketRoutePath } from '../src/constants/marketRoutes';
 import { getStockIconUri } from '../src/constants/stockIcons';
 import { WebThemeProvider, useWebTheme } from '../src/theme/WebThemeContext';
+import {
+  buildMarketRouteParams,
+  getFirstString,
+  isMobileSidebarParam
+} from '../src/utils/routeParams';
 
 const MOBILE_WEB_BREAKPOINT = 900;
-const getFirstString = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value;
-
-function shouldShowMarketSidebar(pathname: string) {
-  return (
-    pathname.startsWith('/prices') ||
-    pathname.startsWith('/prediction') ||
-    pathname.startsWith('/news')
-  );
-}
 
 function WebRootLayoutInner() {
   const pathname = usePathname();
   const params = useGlobalSearchParams<{
     symbol?: string | string[];
-    rank?: string | string[];
+    sector?: string | string[];
+    sectorName?: string | string[];
     mobileSidebar?: string | string[];
   }>();
   const { width } = useWindowDimensions();
-  const showMarketSidebar = shouldShowMarketSidebar(pathname);
+  const showMarketSidebar = isMarketRoutePath(pathname);
   const isMobileWeb = width <= MOBILE_WEB_BREAKPOINT;
   const { colors } = useWebTheme();
   const isMobileSidebarView = React.useMemo(() => {
-    const raw = params.mobileSidebar;
-    const value = Array.isArray(raw) ? raw[0] : raw;
-    return value === '1' || value === 'true';
+    return isMobileSidebarParam(params.mobileSidebar);
   }, [params.mobileSidebar]);
   const shouldRenderSidebar = !isMobileWeb || isMobileSidebarView;
   const prevIsMobileWebRef = React.useRef(isMobileWeb);
   const selectedSymbol = React.useMemo(() => {
-    const rawSymbol = params.symbol;
-
-    if (Array.isArray(rawSymbol)) {
-      return typeof rawSymbol[0] === 'string' ? rawSymbol[0] : null;
-    }
-
-    return typeof rawSymbol === 'string' ? rawSymbol : null;
+    return getFirstString(params.symbol) ?? null;
   }, [params.symbol]);
   const defaultFaviconUri = React.useMemo(() => {
     return Asset.fromModule(require('../src/assets/gorani.png')).uri;
@@ -77,18 +66,17 @@ function WebRootLayoutInner() {
     const enteredMobileWeb = !wasMobileWeb && isMobileWeb;
 
     if (enteredMobileWeb && isMobileSidebarView) {
-      const nextParams: Record<string, string> = {};
-      const symbol = getFirstString(params.symbol);
-      const rank = getFirstString(params.rank);
-
-      if (symbol) nextParams.symbol = symbol;
-      if (rank) nextParams.rank = rank;
+      const nextParams = buildMarketRouteParams({
+        symbol: params.symbol,
+        sector: params.sector,
+        sectorName: params.sectorName
+      });
 
       router.replace({ pathname, params: nextParams } as any);
     }
 
     prevIsMobileWebRef.current = isMobileWeb;
-  }, [isMobileSidebarView, isMobileWeb, params.rank, params.symbol, pathname]);
+  }, [isMobileSidebarView, isMobileWeb, params.sector, params.sectorName, params.symbol, pathname]);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.pageBackground }]}>

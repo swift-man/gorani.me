@@ -32,7 +32,7 @@ type SidebarQuoteRowProps = {
     rise: string;
     fall: string;
   };
-  onPressQuote: (rank: number, symbol: string) => void;
+  onPressQuote: (symbol: string) => void;
 };
 
 const getSignedColorStyle = (
@@ -86,7 +86,7 @@ export default function SidebarQuoteRow({
 
   return (
     <Pressable
-      onPress={() => onPressQuote(item.rank, item.symbol)}
+      onPress={() => onPressQuote(item.symbol)}
       style={[
         styles.listItem,
         { backgroundColor: isDarkMode ? detailBackground : LIGHT_SIDEBAR_BACKGROUND }

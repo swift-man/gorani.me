@@ -14,13 +14,18 @@ import {
   View,
   useWindowDimensions
 } from 'react-native';
-import { getStockIconUri } from '../constants/stockIcons';
+import {
+  type SectorBoardItem,
+  getMobileSectorBoardItems,
+  sortSectorBoardItemsByPopularity
+} from '../constants/sectorBoards';
 import {
   COLLAPSED_PANEL_WIDTH,
   DARK_BORDER_COLOR,
   LIGHT_SIDEBAR_BACKGROUND,
   LIGHT_SIDEBAR_BORDER,
   LIST_HORIZONTAL_MARGIN,
+  LIST_HORIZONTAL_PADDING,
   MIN_PANEL_WIDTH,
   RESIZE_COLLAPSE_THRESHOLD,
   RESIZE_HANDLE_MARGIN_WIDTH,
@@ -40,6 +45,8 @@ import { useWebTheme } from '../theme/WebThemeContext';
 const AnimatedIcon = Animated.createAnimatedComponent(Lucide);
 
 type MarketSidebarMode = 'desktop' | 'mobileCollapsedInline' | 'mobileSidebarOnly';
+type MobileSidebarTab = 'quotes' | 'sectors';
+type MobileSectorItem = SectorBoardItem;
 
 type MarketSidebarProps = {
   mode?: MarketSidebarMode;
@@ -51,6 +58,7 @@ export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) 
   const isMobileMode = mode !== 'desktop';
   const isMobileCollapsedInline = mode === 'mobileCollapsedInline';
   const isMobileSidebarOnly = mode === 'mobileSidebarOnly';
+  const [mobileSidebarTab, setMobileSidebarTab] = React.useState<MobileSidebarTab>('quotes');
   const [collapsed, setCollapsed] = React.useState(isMobileCollapsedInline);
   const [isResizing, setIsResizing] = React.useState(false);
   const [isResizeHandleHover, setIsResizeHandleHover] = React.useState(false);
@@ -60,6 +68,13 @@ export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) 
   const { width } = useWindowDimensions();
   const isDarkMode = resolvedMode === 'dark';
   const resizeCursor = 'col-resize';
+  const showMobileSectorTabs = isMobileSidebarOnly && pathname.startsWith('/communities');
+  const isSectorTabActive = showMobileSectorTabs && mobileSidebarTab === 'sectors';
+  const mobileSectorItems = React.useMemo(() => getMobileSectorBoardItems(), []);
+  const sortedMobileSectors = React.useMemo(
+    () => sortSectorBoardItemsByPopularity(mobileSectorItems),
+    [mobileSectorItems]
+  );
 
   const [expandedPanelWidth, setExpandedPanelWidth] = React.useState(() =>
     isMobileSidebarOnly
@@ -126,6 +141,7 @@ export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) 
   React.useEffect(() => {
     if (isMobileCollapsedInline) {
       setCollapsed(true);
+      setMobileSidebarTab('quotes');
       setIsResizing(false);
       activePointerIdRef.current = null;
       panelWidthAnim.setValue(COLLAPSED_PANEL_WIDTH);
@@ -208,12 +224,12 @@ export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) 
   const resolveTargetPath = React.useCallback(() => {
     if (pathname.startsWith('/prediction')) return '/prediction';
     if (pathname.startsWith('/news')) return '/news';
-    return '/prices';
+    return '/communities';
   }, [pathname]);
 
-  const onPressQuote = React.useCallback((rank: number, symbol: string) => {
+  const onPressQuote = React.useCallback((symbol: string) => {
     const targetPath = resolveTargetPath();
-    const nextParams = { rank: String(rank), symbol } as const;
+    const nextParams = { symbol } as const;
     const nextRoute = { pathname: targetPath, params: nextParams } as const;
 
     if (isMobileMode) {
@@ -228,6 +244,27 @@ export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) 
 
     router.push(nextRoute);
   }, [isMobileMode, pathname, resolveTargetPath]);
+
+  const onPressSector = React.useCallback(
+    (sector: MobileSectorItem) => {
+      const targetPath = resolveTargetPath();
+      const nextParams = { sector: sector.id, sectorName: sector.name } as const;
+      const nextRoute = { pathname: targetPath, params: nextParams } as const;
+
+      if (isMobileMode) {
+        router.push(nextRoute);
+        return;
+      }
+
+      if (pathname === targetPath) {
+        router.setParams(nextParams as any);
+        return;
+      }
+
+      router.push(nextRoute);
+    },
+    [isMobileMode, pathname, resolveTargetPath]
+  );
 
   const applyResizeWidth = React.useCallback((clientX: number) => {
     const deltaX = clientX - resizeStartXRef.current;
@@ -415,7 +452,38 @@ export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) 
     ]
   );
 
+  const renderSectorItem = React.useCallback(
+    ({ item }: { item: MobileSectorItem }) => (
+      <Pressable
+        onPress={() => onPressSector(item)}
+        style={[
+          styles.sectorRow,
+          { backgroundColor: isDarkMode ? colors.detailBackground : LIGHT_SIDEBAR_BACKGROUND }
+        ]}
+      >
+        <View style={styles.sectorRowTop}>
+          <Text style={[styles.sectorRowTitle, isDarkMode && styles.sectorRowTitleDark]} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <View style={[styles.sectorBadge, isDarkMode && styles.sectorBadgeDark]}>
+            <Text style={[styles.sectorBadgeText, isDarkMode && styles.sectorBadgeTextDark]}>
+              {item.popularity}
+            </Text>
+          </View>
+        </View>
+        <Text style={[styles.sectorRowIndustries, isDarkMode && styles.sectorRowIndustriesDark]} numberOfLines={1}>
+          {item.industries}
+        </Text>
+        <Text style={[styles.sectorRowDescription, isDarkMode && styles.sectorRowDescriptionDark]} numberOfLines={1}>
+          {item.description}
+        </Text>
+      </Pressable>
+    ),
+    [colors.detailBackground, isDarkMode, onPressSector]
+  );
+
   const keyExtractor = React.useCallback((item: QuoteItem) => item.symbol, []);
+  const sectorKeyExtractor = React.useCallback((item: MobileSectorItem) => item.id, []);
 
   const getItemLayout = React.useCallback(
     (_: ArrayLike<(typeof mockQuotes)[number]> | null | undefined, index: number) => ({
@@ -451,9 +519,52 @@ export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) 
             collapsed && styles.leftPanelTopBarCollapsed
           ]}
         >
-          <Animated.View style={[styles.leftPanelTitleWrap, { opacity: titleOpacityAnim }]}>
-            <Text style={[styles.leftPanelTitle, isDarkMode && styles.leftPanelTitleDark]}>시세</Text>
-          </Animated.View>
+          {showMobileSectorTabs ? (
+            <View style={styles.mobileTabSwitcher}>
+              <Pressable
+                style={[
+                  styles.mobileTabItem,
+                  mobileSidebarTab === 'quotes' && styles.mobileTabItemActive,
+                  mobileSidebarTab === 'quotes' && isDarkMode && styles.mobileTabItemActiveDark
+                ]}
+                onPress={() => setMobileSidebarTab('quotes')}
+              >
+                <Text
+                  style={[
+                    styles.mobileTabItemText,
+                    isDarkMode && styles.mobileTabItemTextDark,
+                    mobileSidebarTab === 'quotes' && styles.mobileTabItemTextActive,
+                    mobileSidebarTab === 'quotes' && isDarkMode && styles.mobileTabItemTextActiveDark
+                  ]}
+                >
+                  시세
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.mobileTabItem,
+                  mobileSidebarTab === 'sectors' && styles.mobileTabItemActive,
+                  mobileSidebarTab === 'sectors' && isDarkMode && styles.mobileTabItemActiveDark
+                ]}
+                onPress={() => setMobileSidebarTab('sectors')}
+              >
+                <Text
+                  style={[
+                    styles.mobileTabItemText,
+                    isDarkMode && styles.mobileTabItemTextDark,
+                    mobileSidebarTab === 'sectors' && styles.mobileTabItemTextActive,
+                    mobileSidebarTab === 'sectors' && isDarkMode && styles.mobileTabItemTextActiveDark
+                  ]}
+                >
+                  섹터
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Animated.View style={[styles.leftPanelTitleWrap, { opacity: titleOpacityAnim }]}>
+              <Text style={[styles.leftPanelTitle, isDarkMode && styles.leftPanelTitleDark]}>시세</Text>
+            </Animated.View>
+          )}
           {!isMobileMode && (
             <Pressable
               style={[
@@ -483,7 +594,35 @@ export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) 
         </View>
 
         {!collapsed &&
-          (useHorizontalScrollLayout ? (
+          (isSectorTabActive ? (
+            <FlatList
+              style={styles.list}
+              contentContainerStyle={styles.listContent}
+              data={sortedMobileSectors}
+              onLayout={(event) => {
+                listViewportHeightRef.current = event.nativeEvent.layout.height;
+                syncScrollHint();
+              }}
+              onContentSizeChange={(_, height) => {
+                listContentHeightRef.current = height;
+                syncScrollHint();
+              }}
+              onScroll={(event) => {
+                listOffsetYRef.current = event.nativeEvent.contentOffset.y;
+                syncScrollHint();
+              }}
+              renderItem={renderSectorItem}
+              keyExtractor={sectorKeyExtractor}
+              ItemSeparatorComponent={() => (
+                <View style={[styles.listSeparator, isDarkMode && styles.listSeparatorDark]} />
+              )}
+              removeClippedSubviews={Platform.OS !== 'web'}
+              initialNumToRender={16}
+              maxToRenderPerBatch={16}
+              updateCellsBatchingPeriod={16}
+              windowSize={8}
+            />
+          ) : useHorizontalScrollLayout ? (
             <ScrollView
               horizontal
               style={styles.horizontalScrollWrap}
@@ -647,6 +786,44 @@ const styles = StyleSheet.create({
   leftPanelTitleDark: {
     color: '#e2e8f0'
   },
+  mobileTabSwitcher: {
+    height: 34,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 2
+  },
+  mobileTabItem: {
+    height: 28,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  mobileTabItemActive: {
+    backgroundColor: '#0f172a'
+  },
+  mobileTabItemActiveDark: {
+    backgroundColor: '#e2e8f0'
+  },
+  mobileTabItemText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569'
+  },
+  mobileTabItemTextDark: {
+    color: '#cbd5e1'
+  },
+  mobileTabItemTextActive: {
+    color: '#ffffff'
+  },
+  mobileTabItemTextActiveDark: {
+    color: '#0f172a'
+  },
   collapseButton: {
     width: 32,
     height: 32,
@@ -686,6 +863,65 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 8
+  },
+  sectorRow: {
+    minHeight: 54,
+    paddingHorizontal: LIST_HORIZONTAL_PADDING,
+    paddingVertical: 8,
+    marginHorizontal: LIST_HORIZONTAL_MARGIN
+  },
+  sectorRowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  sectorRowTitle: {
+    flex: 1,
+    marginRight: 8,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0f172a'
+  },
+  sectorRowTitleDark: {
+    color: '#f8fafc'
+  },
+  sectorBadge: {
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 8,
+    justifyContent: 'center'
+  },
+  sectorBadgeDark: {
+    borderColor: '#4b5563',
+    backgroundColor: '#27303a'
+  },
+  sectorBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155'
+  },
+  sectorBadgeTextDark: {
+    color: '#e2e8f0'
+  },
+  sectorRowIndustries: {
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569'
+  },
+  sectorRowIndustriesDark: {
+    color: '#cbd5e1'
+  },
+  sectorRowDescription: {
+    marginTop: 2,
+    fontSize: 11,
+    color: '#64748b'
+  },
+  sectorRowDescriptionDark: {
+    color: '#94a3b8'
   },
   listSeparator: {
     height: ROW_SEPARATOR_HEIGHT,

@@ -10,8 +10,10 @@ import {
   PRICE_COLOR_STYLE_ORDER,
   PRICE_COLOR_STYLE_PRESETS
 } from '../constants/priceColorStyles';
+import { isMarketRoutePath } from '../constants/marketRoutes';
 import { sections } from '../screens/types';
 import { type PriceColorStyle, type ThemeMode, useWebTheme } from '../theme/WebThemeContext';
+import { buildMarketRouteParams, isMobileSidebarParam } from '../utils/routeParams';
 
 const BRAND_ICON = require('../assets/gorani.png');
 const MOBILE_WEB_BREAKPOINT = 900;
@@ -22,17 +24,12 @@ const THEME_MODE_LABELS: Record<ThemeMode, string> = {
   system: '기기'
 };
 
-const getFirstString = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value;
-
-const isMarketRoutePath = (pathname: string) =>
-  pathname.startsWith('/prices') || pathname.startsWith('/prediction') || pathname.startsWith('/news');
-
 export default function WebTopBar() {
   const pathname = usePathname();
   const params = useGlobalSearchParams<{
     symbol?: string | string[];
-    rank?: string | string[];
+    sector?: string | string[];
+    sectorName?: string | string[];
     mobileSidebar?: string | string[];
   }>();
   const { width } = useWindowDimensions();
@@ -56,13 +53,16 @@ export default function WebTopBar() {
   const [searchOpen, setSearchOpen] = React.useState(false);
   const isProfileRoot = pathname === '/profile' || pathname === '/profile/';
   const isBrandSelected =
-    pathname === '/' || pathname === '/prices' || pathname.startsWith('/prices/');
+    pathname === '/' ||
+    pathname === '/communities' ||
+    pathname.startsWith('/communities/') ||
+    pathname === '/prices' ||
+    pathname.startsWith('/prices/');
   const tabSelectedBackground = resolvedMode === 'dark' ? '#ffffff' : colors.selectedTabBackground;
   const tabSelectedText = resolvedMode === 'dark' ? '#0f172a' : '#ffffff';
   const isMobileWeb = width <= MOBILE_WEB_BREAKPOINT;
   const isMarketRoute = isMarketRoutePath(pathname);
-  const mobileSidebarRaw = getFirstString(params.mobileSidebar);
-  const isMobileSidebarView = mobileSidebarRaw === '1' || mobileSidebarRaw === 'true';
+  const isMobileSidebarView = isMobileSidebarParam(params.mobileSidebar);
   const showMobileCollapseButton = isMobileWeb && isMarketRoute;
 
   React.useEffect(() => {
@@ -89,12 +89,11 @@ export default function WebTopBar() {
   };
 
   const handleMobileCollapsePress = React.useCallback(() => {
-    const nextParams: Record<string, string> = {};
-    const symbol = getFirstString(params.symbol);
-    const rank = getFirstString(params.rank);
-
-    if (symbol) nextParams.symbol = symbol;
-    if (rank) nextParams.rank = rank;
+    const nextParams = buildMarketRouteParams({
+      symbol: params.symbol,
+      sector: params.sector,
+      sectorName: params.sectorName
+    });
     if (!isMobileSidebarView) {
       nextParams.mobileSidebar = '1';
     }
@@ -105,7 +104,7 @@ export default function WebTopBar() {
     }
 
     router.push({ pathname, params: nextParams } as any);
-  }, [isMobileSidebarView, params.rank, params.symbol, pathname]);
+  }, [isMobileSidebarView, params.sector, params.sectorName, params.symbol, pathname]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.topBarBackground }]}>
@@ -138,7 +137,7 @@ export default function WebTopBar() {
           isBrandSelected && styles.brandButtonSelected,
           isBrandSelected && { backgroundColor: tabSelectedBackground }
         ]}
-        onPress={() => router.push('/prices')}
+        onPress={() => router.push('/communities')}
       >
         <Image source={BRAND_ICON} style={styles.brandIcon} />
       </Pressable>
