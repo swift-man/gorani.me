@@ -28,6 +28,9 @@ if (Test-Path (Join-Path $rnPath "package-lock.json")) {
 
 Write-Host "[4/6] Build static web"
 npx expo export --platform web --output-dir dist
+if ($LASTEXITCODE -ne 0) {
+  throw "expo export failed with exit code $LASTEXITCODE"
+}
 
 $distPath = Join-Path $rnPath "dist"
 if (!(Test-Path $distPath)) { throw "Build output not found: $distPath" }
