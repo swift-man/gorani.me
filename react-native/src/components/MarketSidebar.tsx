@@ -14,7 +14,11 @@ import {
   View,
   useWindowDimensions
 } from 'react-native';
-import { getStockIconUri } from '../constants/stockIcons';
+import {
+  type SectorBoardItem,
+  getMobileSectorBoardItems,
+  sortSectorBoardItemsByPopularity
+} from '../constants/sectorBoards';
 import {
   COLLAPSED_PANEL_WIDTH,
   DARK_BORDER_COLOR,
@@ -42,77 +46,11 @@ const AnimatedIcon = Animated.createAnimatedComponent(Lucide);
 
 type MarketSidebarMode = 'desktop' | 'mobileCollapsedInline' | 'mobileSidebarOnly';
 type MobileSidebarTab = 'quotes' | 'sectors';
-
-type MobileSectorItem = {
-  id: string;
-  name: string;
-  industries: string;
-  description: string;
-  popularity: number;
-};
+type MobileSectorItem = SectorBoardItem;
 
 type MarketSidebarProps = {
   mode?: MarketSidebarMode;
 };
-
-const MOBILE_SECTOR_ITEMS: MobileSectorItem[] = [
-  {
-    id: 'sector-battery',
-    name: '2차전지',
-    industries: '배터리 셀, 소재, 장비',
-    description: '가장 뜨거운 논쟁과 화력을 가진 섹터',
-    popularity: 995
-  },
-  {
-    id: 'sector-semiconductor',
-    name: '반도체/소부장',
-    industries: '삼성전자, 하이닉스, 소재·부품·장비',
-    description: '국장의 기둥, 대표 주주들의 집결지',
-    popularity: 980
-  },
-  {
-    id: 'sector-it',
-    name: '정보기술 (IT)',
-    industries: '반도체, 소프트웨어, 하드웨어',
-    description: '성장성이 가장 높고 시장을 주도함',
-    popularity: 960
-  },
-  {
-    id: 'sector-crypto',
-    name: '가상자산/코인',
-    industries: '비트코인, 이더리움, 알트코인',
-    description: '코인 시장 전체 흐름과 매크로 이슈 중심',
-    popularity: 935
-  },
-  {
-    id: 'sector-bio-ai',
-    name: '바이오/K-헬스',
-    industries: 'AI 의료, 제약, 디지털 헬스케어',
-    description: '고위험 고수익 성격의 토론이 활발함',
-    popularity: 910
-  },
-  {
-    id: 'sector-ethereum',
-    name: '이더리움/생태계',
-    industries: 'ETH, L2, 디파이, 스테이킹',
-    description: '업데이트와 생태계 성장성에 따라 변동성 확대',
-    popularity: 890
-  },
-  {
-    id: 'sector-healthcare',
-    name: '헬스케어',
-    industries: '제약, 바이오, 의료기기',
-    description: '경기 변동에 강하며 임상 결과가 중요함',
-    popularity: 820
-  },
-  {
-    id: 'sector-financial',
-    name: '금융',
-    industries: '은행, 보험, 증권, 카드',
-    description: '금리 변화에 매우 민감하게 반응함',
-    popularity: 790
-  }
-];
 
 export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) {
   const { resolvedMode, colors, trendColors } = useWebTheme();
@@ -132,9 +70,10 @@ export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) 
   const resizeCursor = 'col-resize';
   const showMobileSectorTabs = isMobileSidebarOnly && pathname.startsWith('/communities');
   const isSectorTabActive = showMobileSectorTabs && mobileSidebarTab === 'sectors';
+  const mobileSectorItems = React.useMemo(() => getMobileSectorBoardItems(), []);
   const sortedMobileSectors = React.useMemo(
-    () => [...MOBILE_SECTOR_ITEMS].sort((a, b) => b.popularity - a.popularity),
-    []
+    () => sortSectorBoardItemsByPopularity(mobileSectorItems),
+    [mobileSectorItems]
   );
 
   const [expandedPanelWidth, setExpandedPanelWidth] = React.useState(() =>

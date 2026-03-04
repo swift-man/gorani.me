@@ -17,34 +17,21 @@ import {
   View,
   useWindowDimensions
 } from 'react-native';
+import {
+  type SectorBoardItem,
+  createInitialSectorBoardItems,
+  sortSectorBoardItemsByPopularity
+} from '../../constants/sectorBoards';
 import { getStockIconUri } from '../../constants/stockIcons';
+import {
+  MAIN_HERO_ITEMS,
+  createFeedPageItems,
+  type FeedCardItem
+} from './mainCommunityData';
 
 type MainCommunityHomeProps = {
   isDarkMode: boolean;
   isMobileWeb?: boolean;
-};
-
-type MainHeroItem = {
-  id: string;
-  image: any;
-  title: string;
-  description: string;
-  symbol: string;
-  symbolInfo: string;
-};
-
-type FeedCardItem = {
-  id: string;
-  symbol: string;
-  stockName: string;
-  timeAgo: string;
-  title: string;
-  description: string;
-  previewImage?: any;
-  likes: number;
-  dislikes: number;
-  comments: number;
-  shares: number;
 };
 
 type FeedMenuActionKey = 'alarm' | 'save' | 'hide' | 'report';
@@ -62,122 +49,6 @@ type FeedMenuState = {
   hide: boolean;
   report: boolean;
 };
-
-type SectorBoardItem = {
-  id: string;
-  name: string;
-  industries: string;
-  description: string;
-  popularity: number;
-};
-
-const MAIN_HERO_ITEMS: MainHeroItem[] = [
-  {
-    id: 'main-1',
-    image: require('../../assets/main_dummy/997C533D5E11034A27.png'),
-    title: '신규 상장 코인 변동성 확대',
-    description: '상장 첫날 거래량 급증 구간 분석',
-    symbol: 'KRW-COIN1',
-    symbolInfo: '코인 1'
-  },
-  {
-    id: 'main-2',
-    image: require('../../assets/main_dummy/IMG_0252.jpg'),
-    title: '기관 매수세 유입 종목 체크',
-    description: '거래대금 상위권 종목 흐름 요약',
-    symbol: 'KRW-COIN2',
-    symbolInfo: '코인 2'
-  },
-  {
-    id: 'main-3',
-    image: require('../../assets/main_dummy/IMG_0318.jpg'),
-    title: '실시간 뉴스 반영 종목 모음',
-    description: '공시 이후 급등락 후보군 정리',
-    symbol: 'KRW-COIN3',
-    symbolInfo: '코인 3'
-  },
-  {
-    id: 'main-4',
-    image: require('../../assets/main_dummy/IMG_7788.jpg'),
-    title: 'AI 예측 점수 상위 전략',
-    description: '단기 추세 전환 구간 후보 확인',
-    symbol: 'KRW-COIN4',
-    symbolInfo: '코인 4'
-  },
-  {
-    id: 'main-5',
-    image: require('../../assets/main_dummy/allin.png'),
-    title: '커뮤니티 인기 토론 실시간',
-    description: '참여자 반응 높은 이슈 스냅샷',
-    symbol: 'KRW-COIN5',
-    symbolInfo: '코인 5'
-  },
-  {
-    id: 'main-6',
-    image: require('../../assets/main_dummy/zzz.jpg'),
-    title: '지표 기반 관심 종목 브리핑',
-    description: '수급 변화 포인트 빠르게 확인',
-    symbol: 'KRW-COIN6',
-    symbolInfo: '코인 6'
-  }
-];
-
-const MAIN_FEED_ITEMS: FeedCardItem[] = [
-  {
-    id: 'feed-1',
-    symbol: 'KRW-COIN1',
-    stockName: '코인 1',
-    timeAgo: '4시간 전',
-    title: '거래량이 유의미하게 붙는 구간 진입',
-    description:
-      '지금 구간은 체결 강도보다 거래대금 회복 속도를 보는 게 중요해요. 분봉 기준으로 고점 갱신 실패가 나오면 짧게 정리하고, 재돌파가 나오면 다시 비중을 늘리는 방식이 좋아 보입니다.',
-    previewImage: require('../../assets/main_dummy/IMG_0318.jpg'),
-    likes: 228,
-    dislikes: 18,
-    comments: 46,
-    shares: 12
-  },
-  {
-    id: 'feed-2',
-    symbol: 'KRW-COIN2',
-    stockName: '코인 2',
-    timeAgo: '4시간 전',
-    title: '수급 역전 포인트 체크',
-    description:
-      '외국인 매도 강도가 둔화되는 타이밍에서 개인 추격이 줄어들면 반등 확률이 높아집니다. 오늘은 눌림에서의 반응을 먼저 확인하고 접근하는 게 좋아요.',
-    likes: 174,
-    dislikes: 9,
-    comments: 31,
-    shares: 8
-  },
-  {
-    id: 'feed-3',
-    symbol: 'KRW-COIN3',
-    stockName: '코인 3',
-    timeAgo: '4시간 전',
-    title: '공시 이후 단기 변동성 대응 전략',
-    description:
-      '뉴스 모멘텀이 반영된 뒤에는 변동폭이 커져서 진입/청산 기준을 좁게 잡아야 합니다. 손절 라인을 먼저 정해두고, 방향 확인 이후 분할 진입하는 방식이 안전합니다.',
-    previewImage: require('../../assets/main_dummy/allin.png'),
-    likes: 312,
-    dislikes: 23,
-    comments: 59,
-    shares: 17
-  },
-  {
-    id: 'feed-4',
-    symbol: 'KRW-COIN4',
-    stockName: '코인 4',
-    timeAgo: '4시간 전',
-    title: '매집 구간 해석 의견 공유',
-    description:
-      '거래대금은 줄었지만 저점에서 물량 소화가 꾸준히 진행되는 형태입니다. 추세 전환 시그널이 확인될 때까지는 중립 비중을 유지하는 전략이 좋아 보입니다.',
-    likes: 121,
-    dislikes: 7,
-    comments: 22,
-    shares: 4
-  }
-];
 
 const NEXT_PAGE_LOAD_DELAY_MS = 720;
 const BOTTOM_LOAD_THRESHOLD = 140;
@@ -226,165 +97,6 @@ const DEFAULT_FEED_MENU_STATE: FeedMenuState = {
   report: false
 };
 
-const INITIAL_SECTOR_BOARD_ITEMS: SectorBoardItem[] = [
-  {
-    id: 'sector-it',
-    name: '정보기술 (IT)',
-    industries: '반도체, 소프트웨어, 하드웨어',
-    description: '성장성이 가장 높고 시장을 주도함',
-    popularity: 960
-  },
-  {
-    id: 'sector-healthcare',
-    name: '헬스케어',
-    industries: '제약, 바이오, 의료기기',
-    description: '경기 변동에 강하며 임상 결과가 중요함',
-    popularity: 820
-  },
-  {
-    id: 'sector-financial',
-    name: '금융',
-    industries: '은행, 보험, 증권, 카드',
-    description: '금리 변화에 매우 민감하게 반응함',
-    popularity: 790
-  },
-  {
-    id: 'sector-communication',
-    name: '커뮤니케이션',
-    industries: '포털, 게임, 통신, 엔터테인먼트',
-    description: '플랫폼 기반 서비스와 미디어가 주축',
-    popularity: 760
-  },
-  {
-    id: 'sector-consumer-discretionary',
-    name: '경기소비재',
-    industries: '자동차, 의류, 호텔, 가전',
-    description: '경기가 좋을 때 소비가 늘어나는 업종',
-    popularity: 730
-  },
-  {
-    id: 'sector-consumer-staples',
-    name: '필수소비재',
-    industries: '음식료, 유통(마트), 담배',
-    description: '경기와 무관하게 꼭 써야 하는 물품',
-    popularity: 690
-  },
-  {
-    id: 'sector-energy',
-    name: '에너지',
-    industries: '석유, 가스, 에너지 장비',
-    description: '유가와 국제 정세의 영향을 크게 받음',
-    popularity: 660
-  },
-  {
-    id: 'sector-materials',
-    name: '소재',
-    industries: '화학, 철강, 금속, 종이',
-    description: '원자재 가격 변동이 수익의 핵심',
-    popularity: 640
-  },
-  {
-    id: 'sector-industrials',
-    name: '산업재',
-    industries: '조선, 기계, 건설, 항공',
-    description: '대규모 수주와 인프라 투자가 중요함',
-    popularity: 620
-  },
-  {
-    id: 'sector-utilities',
-    name: '유틸리티',
-    industries: '전기, 수도, 가스',
-    description: '안정적인 배당을 주지만 성장성은 낮음',
-    popularity: 560
-  },
-  {
-    id: 'sector-real-estate',
-    name: '부동산',
-    industries: '리츠(REITs), 부동산 개발',
-    description: '금리 상승기에 비용 부담이 커짐',
-    popularity: 520
-  },
-  {
-    id: 'sector-semiconductor',
-    name: '반도체/소부장',
-    industries: '삼성전자, 하이닉스, 소재·부품·장비',
-    description: '국장의 기둥, 대표 주주들의 집결지',
-    popularity: 980
-  },
-  {
-    id: 'sector-battery',
-    name: '2차전지',
-    industries: '배터리 셀, 소재, 장비',
-    description: '가장 뜨거운 논쟁과 화력을 가진 섹터',
-    popularity: 995
-  },
-  {
-    id: 'sector-bio-ai',
-    name: '바이오/K-헬스',
-    industries: 'AI 의료, 제약, 디지털 헬스케어',
-    description: '고위험 고수익 성격의 토론이 활발함',
-    popularity: 910
-  },
-  {
-    id: 'sector-renewable',
-    name: '신재생에너지',
-    industries: '풍력, 태양광, 수소',
-    description: '정책 수혜주 중심으로 관심이 몰림',
-    popularity: 780
-  },
-  {
-    id: 'sector-content',
-    name: '엔터/K-콘텐츠',
-    industries: '엔터테인먼트, 플랫폼, 미디어',
-    description: '팬덤과 투자가 결합된 독특한 섹터',
-    popularity: 740
-  },
-  {
-    id: 'sector-crypto',
-    name: '가상자산/코인',
-    industries: '비트코인, 이더리움, 알트코인',
-    description: '코인 시장 전체 흐름과 매크로 이슈 중심',
-    popularity: 935
-  },
-  {
-    id: 'sector-bitcoin',
-    name: '비트코인/디지털골드',
-    industries: 'BTC 현물, ETF, 채굴 관련',
-    description: '기관 수급과 거시 지표 반응이 빠른 핵심 코인',
-    popularity: 905
-  },
-  {
-    id: 'sector-ethereum',
-    name: '이더리움/생태계',
-    industries: 'ETH, L2, 디파이, 스테이킹',
-    description: '업데이트와 생태계 성장성에 따라 변동성 확대',
-    popularity: 890
-  }
-];
-
-const createFeedPageItems = (pageNumber: number): FeedCardItem[] =>
-  MAIN_FEED_ITEMS.map((item, index) => {
-    const likesDelta = pageNumber * (14 + index * 3);
-    const dislikesDelta = pageNumber * (index % 3);
-    const commentsDelta = pageNumber * (6 + index * 2);
-    const sharesDelta = pageNumber * (2 + (index % 2));
-    const extraHours = pageNumber * 2;
-    const timeAgo =
-      pageNumber === 0
-        ? item.timeAgo
-        : `${Math.max(1, Number.parseInt(item.timeAgo, 10) + extraHours)}시간 전`;
-
-    return {
-      ...item,
-      id: `${item.id}-p${pageNumber}`,
-      timeAgo,
-      likes: item.likes + likesDelta,
-      dislikes: item.dislikes + dislikesDelta,
-      comments: item.comments + commentsDelta,
-      shares: item.shares + sharesDelta
-    };
-  });
-
 export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: MainCommunityHomeProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const heroItems = React.useMemo(() => MAIN_HERO_ITEMS.slice(0, 6), []);
@@ -400,8 +112,9 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
   const [menuAnchor, setMenuAnchor] = React.useState<{ x: number; y: number } | null>(null);
   const [menuPostId, setMenuPostId] = React.useState<string | null>(null);
   const [postMenuStateMap, setPostMenuStateMap] = React.useState<Record<string, FeedMenuState>>({});
-  const [sectorBoardItems, setSectorBoardItems] =
-    React.useState<SectorBoardItem[]>(INITIAL_SECTOR_BOARD_ITEMS);
+  const [sectorBoardItems, setSectorBoardItems] = React.useState<SectorBoardItem[]>(
+    () => createInitialSectorBoardItems()
+  );
   const [newSectorName, setNewSectorName] = React.useState('');
   const [newSectorDescription, setNewSectorDescription] = React.useState('');
   const [sectorAddMenuAnchor, setSectorAddMenuAnchor] = React.useState<{ x: number; y: number } | null>(
@@ -540,11 +253,7 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
     [closeFeedMenu, menuPostId]
   );
   const sortedSectorBoardItems = React.useMemo(
-    () =>
-      [...sectorBoardItems].sort((a, b) => {
-        if (b.popularity !== a.popularity) return b.popularity - a.popularity;
-        return a.name.localeCompare(b.name);
-      }),
+    () => sortSectorBoardItemsByPopularity(sectorBoardItems),
     [sectorBoardItems]
   );
   const openSectorAddMenu = React.useCallback((event: any) => {

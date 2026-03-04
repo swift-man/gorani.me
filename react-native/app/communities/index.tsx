@@ -5,9 +5,7 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-na
 import CommunityComposer from '../../src/components/prices/CommunityComposer';
 import MainCommunityHome from '../../src/components/prices/MainCommunityHome';
 import { useWebTheme } from '../../src/theme/WebThemeContext';
-
-const getFirstString = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value;
+import { getFirstString } from '../../src/utils/routeParams';
 
 export default function CommunitiesMainRoute() {
   const params = useLocalSearchParams<{

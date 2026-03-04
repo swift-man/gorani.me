@@ -10,8 +10,10 @@ import {
   PRICE_COLOR_STYLE_ORDER,
   PRICE_COLOR_STYLE_PRESETS
 } from '../constants/priceColorStyles';
+import { isMarketRoutePath } from '../constants/marketRoutes';
 import { sections } from '../screens/types';
 import { type PriceColorStyle, type ThemeMode, useWebTheme } from '../theme/WebThemeContext';
+import { buildMarketRouteParams, isMobileSidebarParam } from '../utils/routeParams';
 
 const BRAND_ICON = require('../assets/gorani.png');
 const MOBILE_WEB_BREAKPOINT = 900;
@@ -21,15 +23,6 @@ const THEME_MODE_LABELS: Record<ThemeMode, string> = {
   dark: '어두운 모드',
   system: '기기'
 };
-
-const getFirstString = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value;
-
-const isMarketRoutePath = (pathname: string) =>
-  pathname.startsWith('/communities') ||
-  pathname.startsWith('/prices') ||
-  pathname.startsWith('/prediction') ||
-  pathname.startsWith('/news');
 
 export default function WebTopBar() {
   const pathname = usePathname();
@@ -69,8 +62,7 @@ export default function WebTopBar() {
   const tabSelectedText = resolvedMode === 'dark' ? '#0f172a' : '#ffffff';
   const isMobileWeb = width <= MOBILE_WEB_BREAKPOINT;
   const isMarketRoute = isMarketRoutePath(pathname);
-  const mobileSidebarRaw = getFirstString(params.mobileSidebar);
-  const isMobileSidebarView = mobileSidebarRaw === '1' || mobileSidebarRaw === 'true';
+  const isMobileSidebarView = isMobileSidebarParam(params.mobileSidebar);
   const showMobileCollapseButton = isMobileWeb && isMarketRoute;
 
   React.useEffect(() => {
@@ -97,14 +89,11 @@ export default function WebTopBar() {
   };
 
   const handleMobileCollapsePress = React.useCallback(() => {
-    const nextParams: Record<string, string> = {};
-    const symbol = getFirstString(params.symbol);
-    const sector = getFirstString(params.sector);
-    const sectorName = getFirstString(params.sectorName);
-
-    if (symbol) nextParams.symbol = symbol;
-    if (sector) nextParams.sector = sector;
-    if (sectorName) nextParams.sectorName = sectorName;
+    const nextParams = buildMarketRouteParams({
+      symbol: params.symbol,
+      sector: params.sector,
+      sectorName: params.sectorName
+    });
     if (!isMobileSidebarView) {
       nextParams.mobileSidebar = '1';
     }
