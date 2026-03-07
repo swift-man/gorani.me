@@ -15,6 +15,7 @@ export type FeedCardItem = {
   title: string;
   description: string;
   previewImage?: any;
+  previewAspectRatio?: number;
   likes: number;
   dislikes: number;
   comments: number;
@@ -82,6 +83,7 @@ const MAIN_FEED_ITEMS: FeedCardItem[] = [
     description:
       '지금 구간은 체결 강도보다 거래대금 회복 속도를 보는 게 중요해요. 분봉 기준으로 고점 갱신 실패가 나오면 짧게 정리하고, 재돌파가 나오면 다시 비중을 늘리는 방식이 좋아 보입니다.',
     previewImage: require('../../assets/main_dummy/IMG_0318.jpg'),
+    previewAspectRatio: 250 / 250,
     likes: 228,
     dislikes: 18,
     comments: 46,
@@ -109,6 +111,7 @@ const MAIN_FEED_ITEMS: FeedCardItem[] = [
     description:
       '뉴스 모멘텀이 반영된 뒤에는 변동폭이 커져서 진입/청산 기준을 좁게 잡아야 합니다. 손절 라인을 먼저 정해두고, 방향 확인 이후 분할 진입하는 방식이 안전합니다.',
     previewImage: require('../../assets/main_dummy/allin.png'),
+    previewAspectRatio: 1954 / 1578,
     likes: 312,
     dislikes: 23,
     comments: 59,
