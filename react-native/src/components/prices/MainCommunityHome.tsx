@@ -623,13 +623,17 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
                     {item.title}
                   </Text>
 
-                  {item.previewImage ? (
-                    <Image source={item.previewImage} style={styles.feedPreviewImage} resizeMode="cover" />
-                  ) : null}
-
                   <Text style={[styles.feedDescription, isDarkMode && styles.feedDescriptionDark]} numberOfLines={6}>
                     {item.description}
                   </Text>
+
+                  {item.previewImage ? (
+                    <View
+                      style={[styles.feedPreviewImageFrame, { aspectRatio: item.previewAspectRatio ?? 16 / 9 }]}
+                    >
+                      <Image source={item.previewImage} style={styles.feedPreviewImage} resizeMode="contain" />
+                    </View>
+                  ) : null}
 
                   <View style={styles.feedActionsRow}>
                     <View style={[styles.feedVoteGroup, isDarkMode && styles.feedVoteGroupDark]}>
@@ -1099,7 +1103,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#36363B'
   },
   feedList: {
-    paddingTop: 4
+    paddingTop: 4,
+    width: '100%',
+    alignSelf: 'stretch'
   },
   sectorBoardColumn: {
     flex: 1.65,
@@ -1396,9 +1402,13 @@ const styles = StyleSheet.create({
     color: '#cbd5e1'
   },
   feedItemWrap: {
-    marginBottom: 0
+    marginBottom: 0,
+    width: '100%',
+    alignSelf: 'stretch'
   },
   feedCard: {
+    width: '100%',
+    alignSelf: 'stretch',
     borderRadius: 0,
     borderWidth: 0,
     borderColor: 'transparent',
@@ -1489,8 +1499,15 @@ const styles = StyleSheet.create({
   },
   feedPreviewImage: {
     width: '100%',
-    height: 184,
+    height: '100%',
     borderRadius: 12,
+    marginTop: 0
+  },
+  feedPreviewImageFrame: {
+    width: '100%',
+    alignSelf: 'stretch',
+    borderRadius: 12,
+    overflow: 'hidden',
     marginTop: 10
   },
   feedDescription: {
