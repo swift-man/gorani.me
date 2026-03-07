@@ -129,6 +129,21 @@ const MAIN_FEED_ITEMS: FeedCardItem[] = [
     dislikes: 7,
     comments: 22,
     shares: 4
+  },
+  {
+    id: 'feed-5',
+    symbol: 'KRW-COIN5',
+    stockName: '코인 5',
+    timeAgo: '4시간 전',
+    title: '세로 비율 이미지 첨부 게시글 테스트',
+    description:
+      '세로 이미지가 들어왔을 때 가로 100% 프레임 안에서 중앙 정렬되고, 좌우 빈 공간이 블러 배경으로 처리되는지 확인하는 더미 게시글입니다.',
+    previewImage: require('../../assets/main_dummy/dongjak.jpg'),
+    previewAspectRatio: 420 / 610,
+    likes: 96,
+    dislikes: 5,
+    comments: 18,
+    shares: 3
   }
 ];
 

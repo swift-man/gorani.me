@@ -1,5 +1,6 @@
 import React from 'react';
 import { router } from 'expo-router';
+import { Asset } from 'expo-asset';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -163,6 +164,16 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
         ? ({
             backdropFilter: 'blur(14px)',
             WebkitBackdropFilter: 'blur(14px)'
+          } as any)
+        : null,
+    []
+  );
+  const portraitPreviewBlurWebStyle = React.useMemo(
+    () =>
+      Platform.OS === 'web'
+        ? ({
+            filter: 'blur(20px) saturate(1.06)',
+            WebkitFilter: 'blur(20px) saturate(1.06)'
           } as any)
         : null,
     []
@@ -628,17 +639,39 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
                     {item.description}
                   </Text>
 
-                  {item.previewImage ? (
-                    <View
-                      style={[
-                        styles.feedPreviewImageFrame,
-                        isDarkMode && styles.feedPreviewImageFrameDark,
-                        { aspectRatio: item.previewAspectRatio ?? 16 / 9 }
-                      ]}
-                    >
-                      <Image source={item.previewImage} style={styles.feedPreviewImage} resizeMode="contain" />
-                    </View>
-                  ) : null}
+                  {item.previewImage
+                    ? (() => {
+                        const previewAsset = Asset.fromModule(item.previewImage);
+                        const previewAspectRatio =
+                          item.previewAspectRatio ??
+                          (previewAsset?.width && previewAsset?.height
+                            ? previewAsset.width / previewAsset.height
+                            : 16 / 9);
+                        const isPortraitPreview = previewAspectRatio < 1;
+
+                        return (
+                          <View
+                            style={[
+                              styles.feedPreviewImageFrame,
+                              isDarkMode && styles.feedPreviewImageFrameDark,
+                              { aspectRatio: isPortraitPreview ? 1 : previewAspectRatio }
+                            ]}
+                          >
+                            {isPortraitPreview ? (
+                              <>
+                                <Image
+                                  source={item.previewImage}
+                                  style={[styles.feedPreviewBlurBackground, portraitPreviewBlurWebStyle]}
+                                  resizeMode="cover"
+                                  blurRadius={22}
+                                />
+                              </>
+                            ) : null}
+                            <Image source={item.previewImage} style={styles.feedPreviewImage} resizeMode="contain" />
+                          </View>
+                        );
+                      })()
+                    : null}
 
                   <View style={styles.feedActionsRow}>
                     <View style={[styles.feedVoteGroup, isDarkMode && styles.feedVoteGroupDark]}>
@@ -1511,12 +1544,18 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     marginTop: 0
   },
+  feedPreviewBlurBackground: {
+    ...StyleSheet.absoluteFillObject,
+    transform: [{ scale: 1.24 }],
+    opacity: 1
+  },
   feedPreviewImageFrame: {
     width: '100%',
     alignSelf: 'stretch',
     borderRadius: MEDIA_CORNER_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#d9dee7',
+    backgroundColor: '#111827',
     overflow: 'hidden',
     marginTop: 10
   },
