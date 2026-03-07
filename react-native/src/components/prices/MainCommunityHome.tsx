@@ -24,6 +24,7 @@ import { getStockIconUri } from '../../constants/stockIcons';
 import { MAIN_HERO_ITEMS } from './mainCommunityData';
 import CommunityContentList from './community-feed/CommunityContentList';
 import { useCommunityFeed } from './community-feed/useCommunityFeed';
+import FollowToggleButton from './common/FollowToggleButton';
 
 type MainCommunityHomeProps = {
   isDarkMode: boolean;
@@ -54,6 +55,7 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
   const [newSectorName, setNewSectorName] = React.useState('');
   const [newSectorDescription, setNewSectorDescription] = React.useState('');
   const [sectorAddMenuAnchor, setSectorAddMenuAnchor] = React.useState<{ x: number; y: number } | null>(null);
+  const [joinedSectorMap, setJoinedSectorMap] = React.useState<Record<string, boolean>>({});
   const leftHeroButtonOpacity = React.useRef(new Animated.Value(0)).current;
   const rightHeroButtonOpacity = React.useRef(new Animated.Value(0)).current;
 
@@ -207,10 +209,11 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
     closeSectorAddMenu();
   }, [closeSectorAddMenu, newSectorDescription, newSectorName]);
 
-  const onBoostSectorPopularity = React.useCallback((sectorId: string) => {
-    setSectorBoardItems((prev) =>
-      prev.map((item) => (item.id === sectorId ? { ...item, popularity: item.popularity + 1 } : item))
-    );
+  const onPressSectorJoin = React.useCallback((sectorId: string) => {
+    setJoinedSectorMap((prev) => ({
+      ...prev,
+      [sectorId]: !prev[sectorId]
+    }));
   }, []);
 
   return (
@@ -337,23 +340,16 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
                       <Text style={[styles.sectorName, isDarkMode && styles.sectorNameDark]} numberOfLines={1}>
                         {index + 1}. {sector.name}
                       </Text>
-                      <Pressable
-                        style={[styles.sectorPopularityButton, isDarkMode && styles.sectorPopularityButtonDark]}
-                        onPress={(event) => {
-                          event.stopPropagation?.();
-                          onBoostSectorPopularity(sector.id);
-                        }}
-                      >
-                        <MaterialCommunityIcons
-                          name="arrow-up-bold"
-                          size={12}
-                          color={isDarkMode ? '#e2e8f0' : '#334155'}
-                          style={styles.sectorPopularityIcon}
-                        />
-                        <Text style={[styles.sectorPopularityText, isDarkMode && styles.sectorPopularityTextDark]}>
-                          {sector.popularity}
-                        </Text>
-                      </Pressable>
+                      {(() => {
+                        const isJoined = !!joinedSectorMap[sector.id];
+                        return (
+                          <FollowToggleButton
+                            isDarkMode={isDarkMode}
+                            isFollowing={isJoined}
+                            onToggle={() => onPressSectorJoin(sector.id)}
+                          />
+                        );
+                      })()}
                     </View>
                     <Text style={[styles.sectorIndustries, isDarkMode && styles.sectorIndustriesDark]} numberOfLines={1}>
                       {sector.industries}
@@ -660,31 +656,6 @@ const styles = StyleSheet.create({
   },
   sectorNameDark: {
     color: '#f8fafc'
-  },
-  sectorPopularityButton: {
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 8,
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  sectorPopularityButtonDark: {
-    borderColor: '#4b5563',
-    backgroundColor: '#27303a'
-  },
-  sectorPopularityIcon: {
-    marginRight: 3
-  },
-  sectorPopularityText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#334155'
-  },
-  sectorPopularityTextDark: {
-    color: '#e2e8f0'
   },
   sectorIndustries: {
     marginTop: 5,

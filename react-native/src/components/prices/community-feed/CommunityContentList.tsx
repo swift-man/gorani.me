@@ -19,6 +19,7 @@ import {
   SECTOR_SORT_MENU_WIDTH,
   type CommunityFeedController
 } from './useCommunityFeed';
+import FollowToggleButton from '../common/FollowToggleButton';
 
 const MEDIA_CORNER_RADIUS = 20;
 
@@ -35,6 +36,7 @@ export default function CommunityContentList({
   feedController,
   topInset = 0
 }: CommunityContentListProps) {
+  const [joinedPostMap, setJoinedPostMap] = React.useState<Record<string, boolean>>({});
   const portraitPreviewBlurWebStyle = React.useMemo(
     () =>
       Platform.OS === 'web'
@@ -45,6 +47,12 @@ export default function CommunityContentList({
         : null,
     []
   );
+  const onPressJoin = React.useCallback((postId: string) => {
+    setJoinedPostMap((prev) => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }));
+  }, []);
 
   return (
     <>
@@ -67,6 +75,9 @@ export default function CommunityContentList({
         <View style={styles.feedList}>
           {feedController.sortedFeedItems.map((item, index) => (
             <View key={item.id} style={styles.feedItemWrap}>
+              {(() => {
+                const isJoined = !!joinedPostMap[item.id];
+                return (
               <Pressable
                 style={[styles.feedCard, isDarkMode && styles.feedCardDark]}
                 onPress={() => router.push({ pathname: '/communities/detail', params: { symbol: item.symbol } })}
@@ -79,9 +90,11 @@ export default function CommunityContentList({
                     </Text>
                   </View>
                   <View style={styles.feedHeaderRight}>
-                    <Pressable style={[styles.followButton, isDarkMode && styles.followButtonDark]}>
-                      <Text style={[styles.followButtonText, isDarkMode && styles.followButtonTextDark]}>팔로우</Text>
-                    </Pressable>
+                    <FollowToggleButton
+                      isDarkMode={isDarkMode}
+                      isFollowing={isJoined}
+                      onToggle={() => onPressJoin(item.id)}
+                    />
                     <Pressable style={styles.moreButton} onPress={(event) => feedController.openFeedMenu(item.id, event)}>
                       <MaterialIcons name="more-horiz" size={20} color={isDarkMode ? '#d1d5db' : '#64748b'} />
                     </Pressable>
@@ -164,6 +177,8 @@ export default function CommunityContentList({
                   </Pressable>
                 </View>
               </Pressable>
+                );
+              })()}
               {index < feedController.sortedFeedItems.length - 1 && (
                 <View style={[styles.feedSeparator, isDarkMode && styles.feedSeparatorDark]} />
               )}
@@ -413,28 +428,6 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     flexDirection: 'row',
     alignItems: 'center'
-  },
-  followButton: {
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 11,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  followButtonDark: {
-    borderColor: '#4b5563',
-    backgroundColor: '#27303a'
-  },
-  followButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0f172a'
-  },
-  followButtonTextDark: {
-    color: '#e2e8f0'
   },
   moreButton: {
     width: 28,
