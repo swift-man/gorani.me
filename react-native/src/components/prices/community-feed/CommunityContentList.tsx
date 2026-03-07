@@ -411,7 +411,7 @@ export default function CommunityContentList({
           })}
         </View>
 
-        {feedController.isLoadingNextPage && (
+        {feedController.hasNextPage && feedController.isLoadingNextPage && (
           <View style={styles.bottomLoader}>
             <ActivityIndicator size="small" color={isDarkMode ? '#e2e8f0' : '#334155'} />
             <Text style={[styles.bottomLoaderText, isDarkMode && styles.bottomLoaderTextDark]}>

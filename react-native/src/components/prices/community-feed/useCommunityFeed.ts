@@ -1,5 +1,5 @@
 import React from 'react';
-import { createFeedPageItems, type FeedCardItem } from '../mainCommunityData';
+import { createFeedPageItems, hasFeedPage, type FeedCardItem } from '../mainCommunityData';
 
 export type FeedMenuActionKey = 'alarm' | 'save' | 'hide' | 'report';
 
@@ -32,6 +32,7 @@ export type MenuPosition = {
 export type CommunityFeedController = {
   sortedFeedItems: FeedCardItem[];
   isLoadingNextPage: boolean;
+  hasNextPage: boolean;
   handleScroll: (event: any) => void;
   selectedSectorSortOption: SectorSortOption;
   sortOptions: SectorSortOption[];
@@ -57,6 +58,7 @@ type UseCommunityFeedParams = {
 
 const NEXT_PAGE_LOAD_DELAY_MS = 720;
 const BOTTOM_LOAD_THRESHOLD = 140;
+const BOTTOM_RELEASE_THRESHOLD = BOTTOM_LOAD_THRESHOLD + 220;
 const FEED_MENU_OFFSET_Y = 8;
 const FEED_MENU_SCREEN_PADDING = 10;
 const SECTOR_SORT_MENU_OFFSET_Y = 6;
@@ -109,6 +111,7 @@ const SECTOR_SORT_OPTIONS: SectorSortOption[] = [
 export function useCommunityFeed({ screenWidth, screenHeight }: UseCommunityFeedParams): CommunityFeedController {
   const [feedItems, setFeedItems] = React.useState<FeedCardItem[]>(() => createFeedPageItems(0));
   const [nextPage, setNextPage] = React.useState(1);
+  const [hasNextPage, setHasNextPage] = React.useState(() => hasFeedPage(1));
   const [isLoadingNextPage, setIsLoadingNextPage] = React.useState(false);
   const [menuAnchor, setMenuAnchor] = React.useState<{ x: number; y: number } | null>(null);
   const [menuPostId, setMenuPostId] = React.useState<string | null>(null);
@@ -118,18 +121,31 @@ export function useCommunityFeed({ screenWidth, screenHeight }: UseCommunityFeed
     null
   );
   const nextPageTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bottomReachedLockRef = React.useRef(false);
 
   const loadNextPage = React.useCallback(() => {
-    if (isLoadingNextPage) return;
+    if (isLoadingNextPage || !hasNextPage) return;
+    if (!hasFeedPage(nextPage)) {
+      setHasNextPage(false);
+      return;
+    }
 
     setIsLoadingNextPage(true);
     nextPageTimerRef.current = setTimeout(() => {
-      setFeedItems((prev) => [...prev, ...createFeedPageItems(nextPage)]);
-      setNextPage((prev) => prev + 1);
+      const pageToLoad = nextPage;
+      const nextItems = createFeedPageItems(pageToLoad);
+
+      if (nextItems.length > 0) {
+        setFeedItems((prev) => [...prev, ...nextItems]);
+      }
+
+      const followingPage = pageToLoad + 1;
+      setNextPage(followingPage);
+      setHasNextPage(nextItems.length > 0 && hasFeedPage(followingPage));
       setIsLoadingNextPage(false);
       nextPageTimerRef.current = null;
     }, NEXT_PAGE_LOAD_DELAY_MS);
-  }, [isLoadingNextPage, nextPage]);
+  }, [hasNextPage, isLoadingNextPage, nextPage]);
 
   React.useEffect(() => {
     return () => {
@@ -142,14 +158,21 @@ export function useCommunityFeed({ screenWidth, screenHeight }: UseCommunityFeed
   const handleScroll = React.useCallback(
     (event: any) => {
       const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-      const reachedBottom =
-        layoutMeasurement.height + contentOffset.y >= contentSize.height - BOTTOM_LOAD_THRESHOLD;
+      const distanceToBottom =
+        contentSize.height - (layoutMeasurement.height + contentOffset.y);
+      const reachedBottom = distanceToBottom <= BOTTOM_LOAD_THRESHOLD;
+      const movedAwayFromBottom = distanceToBottom > BOTTOM_RELEASE_THRESHOLD;
 
-      if (reachedBottom) {
+      if (movedAwayFromBottom) {
+        bottomReachedLockRef.current = false;
+      }
+
+      if (reachedBottom && !bottomReachedLockRef.current && hasNextPage && !isLoadingNextPage) {
+        bottomReachedLockRef.current = true;
         loadNextPage();
       }
     },
-    [loadNextPage]
+    [hasNextPage, isLoadingNextPage, loadNextPage]
   );
 
   const sortedFeedItems = React.useMemo(() => {
@@ -277,6 +300,7 @@ export function useCommunityFeed({ screenWidth, screenHeight }: UseCommunityFeed
   return {
     sortedFeedItems,
     isLoadingNextPage,
+    hasNextPage,
     handleScroll,
     selectedSectorSortOption,
     sortOptions: SECTOR_SORT_OPTIONS,
