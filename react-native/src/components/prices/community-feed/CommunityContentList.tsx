@@ -302,14 +302,14 @@ const styles = StyleSheet.create({
   },
   feedColumnWide: {
     flex: 3.35,
-    marginRight: 16
+    marginRight: 10
   },
   feedColumnSingle: {
     flex: 1
   },
   communityListTopBar: {
     height: 36,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start'
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   },
   communityListTopBarDivider: {
     height: 1,
-    marginHorizontal: 14,
+    marginHorizontal: 10,
     marginBottom: 6,
     backgroundColor: '#e2e8f0'
   },
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderColor: 'transparent',
     backgroundColor: 'transparent',
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     paddingVertical: 12,
     marginBottom: 0
   },
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   },
   feedSeparator: {
     height: 1,
-    marginHorizontal: 14,
+    marginHorizontal: 10,
     backgroundColor: '#e2e8f0'
   },
   feedSeparatorDark: {
