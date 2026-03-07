@@ -3,6 +3,8 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 import {
   DARK_BORDER_COLOR,
   FLOW_COLUMN_WIDTH,
+  INSTITUTION_COLUMN_EXTRA_WIDTH,
+  INSTITUTION_COLUMN_RIGHT_PADDING,
   LIGHT_SIDEBAR_BACKGROUND,
   LIGHT_SIDEBAR_BORDER,
   LIST_HORIZONTAL_MARGIN,
@@ -47,8 +49,7 @@ export default function SidebarSectionHeader({
       style={[
         styles.sectionHeader,
         {
-          backgroundColor: isDarkMode ? '#212429' : LIGHT_SIDEBAR_BACKGROUND,
-          borderBottomColor: isDarkMode ? DARK_BORDER_COLOR : LIGHT_SIDEBAR_BORDER
+          backgroundColor: isDarkMode ? '#212429' : LIGHT_SIDEBAR_BACKGROUND
         }
       ]}
     >
@@ -62,35 +63,34 @@ export default function SidebarSectionHeader({
       >
         <Text style={[styles.sectionHeaderText, isDarkMode && styles.sectionHeaderTextDark]}>종목 정보</Text>
       </View>
-      <Text
+      <View
         style={[
-          styles.sectionHeaderText,
           styles.priceHeaderColumn,
           isTwoColumnLayout && styles.priceHeaderColumnTwoColumn,
-          isMobileLayout && styles.priceHeaderColumnMobile,
-          isDarkMode && styles.sectionHeaderTextDark
+          isMobileLayout && styles.priceHeaderColumnMobile
         ]}
       >
-        가격 정보
-      </Text>
+        <Text style={[styles.sectionHeaderText, isDarkMode && styles.sectionHeaderTextDark]}>가격 정보</Text>
+      </View>
       {!hideVolumeColumn && (
-        <Text style={[styles.sectionHeaderText, styles.volumeHeaderColumn, isDarkMode && styles.sectionHeaderTextDark]}>
-          거래대금
-        </Text>
+        <View style={styles.volumeHeaderColumn}>
+          <Text style={[styles.sectionHeaderText, isDarkMode && styles.sectionHeaderTextDark]}>거래대금</Text>
+        </View>
       )}
       {!hideFlowColumns && (
         <>
-          <Text style={[styles.sectionHeaderText, styles.personalHeaderColumn, isDarkMode && styles.sectionHeaderTextDark]}>
-            개인
-          </Text>
-          <Text style={[styles.sectionHeaderText, styles.foreignHeaderColumn, isDarkMode && styles.sectionHeaderTextDark]}>
-            외국인
-          </Text>
-          <Text style={[styles.sectionHeaderText, styles.institutionHeaderColumn, isDarkMode && styles.sectionHeaderTextDark]}>
-            기관
-          </Text>
+          <View style={styles.personalHeaderColumn}>
+            <Text style={[styles.sectionHeaderText, isDarkMode && styles.sectionHeaderTextDark]}>개인</Text>
+          </View>
+          <View style={styles.foreignHeaderColumn}>
+            <Text style={[styles.sectionHeaderText, isDarkMode && styles.sectionHeaderTextDark]}>외국인</Text>
+          </View>
+          <View style={styles.institutionHeaderColumn}>
+            <Text style={[styles.sectionHeaderText, isDarkMode && styles.sectionHeaderTextDark]}>기관</Text>
+          </View>
         </>
       )}
+      <View style={[styles.sectionHeaderDivider, isDarkMode && styles.sectionHeaderDividerDark]} />
     </View>
   );
 }
@@ -102,7 +102,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: LIST_HORIZONTAL_PADDING,
     marginHorizontal: LIST_HORIZONTAL_MARGIN,
-    borderBottomWidth: 1
+    position: 'relative'
+  },
+  sectionHeaderDivider: {
+    position: 'absolute',
+    left: LIST_HORIZONTAL_PADDING,
+    right: 0,
+    bottom: 0,
+    height: 1,
+    backgroundColor: LIGHT_SIDEBAR_BORDER
+  },
+  sectionHeaderDividerDark: {
+    backgroundColor: DARK_BORDER_COLOR
   },
   sectionHeaderText: {
     fontSize: 12,
@@ -126,7 +137,7 @@ const styles = StyleSheet.create({
   },
   priceHeaderColumn: {
     width: PRICE_COLUMN_WIDTH,
-    textAlign: 'right'
+    alignItems: 'flex-end'
   },
   priceHeaderColumnTwoColumn: {
     width: PRICE_COLUMN_WIDTH
@@ -136,18 +147,19 @@ const styles = StyleSheet.create({
   },
   volumeHeaderColumn: {
     width: VOLUME_COLUMN_WIDTH,
-    textAlign: 'right'
+    alignItems: 'flex-end'
   },
   personalHeaderColumn: {
     width: FLOW_COLUMN_WIDTH,
-    textAlign: 'right'
+    alignItems: 'flex-end'
   },
   foreignHeaderColumn: {
     width: FLOW_COLUMN_WIDTH,
-    textAlign: 'right'
+    alignItems: 'flex-end'
   },
   institutionHeaderColumn: {
-    width: FLOW_COLUMN_WIDTH,
-    textAlign: 'right'
+    width: FLOW_COLUMN_WIDTH + INSTITUTION_COLUMN_EXTRA_WIDTH,
+    paddingRight: INSTITUTION_COLUMN_RIGHT_PADDING,
+    alignItems: 'flex-end'
   }
 });
