@@ -65,11 +65,13 @@ export default function CommunitiesMainRoute() {
         </View>
       )}
 
-      <CommunityComposer
-        isDarkMode={isDarkMode}
-        backgroundColor={colors.detailBackground}
-        isMobileWeb={isMobileWeb}
-      />
+      {!isMainCommunity && (
+        <CommunityComposer
+          isDarkMode={isDarkMode}
+          backgroundColor={colors.detailBackground}
+          isMobileWeb={isMobileWeb}
+        />
+      )}
     </View>
   );
 }
