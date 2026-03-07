@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     paddingBottom: 14
   },
   heroScrollContentDesktop: {
-    paddingHorizontal: 14
+    paddingHorizontal: 10
   },
   heroScrollContentMobile: {
     paddingHorizontal: 12

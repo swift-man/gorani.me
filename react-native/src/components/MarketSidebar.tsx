@@ -708,7 +708,7 @@ export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) 
 
       {!isMobileMode && (
         <View
-          style={[styles.resizeHandleHitBox, { backgroundColor: colors.pageBackground }]}
+          style={styles.resizeHandleHitBox}
           {...resizeHandleProps}
         />
       )}
