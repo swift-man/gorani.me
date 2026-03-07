@@ -72,6 +72,7 @@ const DEFAULT_NEW_SECTOR_POPULARITY = 120;
 const SECTOR_SORT_MENU_WIDTH = 132;
 const SECTOR_SORT_MENU_HEIGHT = 146;
 const SECTOR_SORT_MENU_OFFSET_Y = 6;
+const MEDIA_CORNER_RADIUS = 20;
 
 const FEED_MENU_ACTIONS: FeedMenuAction[] = [
   {
@@ -629,7 +630,11 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
 
                   {item.previewImage ? (
                     <View
-                      style={[styles.feedPreviewImageFrame, { aspectRatio: item.previewAspectRatio ?? 16 / 9 }]}
+                      style={[
+                        styles.feedPreviewImageFrame,
+                        isDarkMode && styles.feedPreviewImageFrameDark,
+                        { aspectRatio: item.previewAspectRatio ?? 16 / 9 }
+                      ]}
                     >
                       <Image source={item.previewImage} style={styles.feedPreviewImage} resizeMode="contain" />
                     </View>
@@ -981,7 +986,9 @@ const styles = StyleSheet.create({
   heroImageCard: {
     width: 280,
     height: 210,
-    borderRadius: 16,
+    borderRadius: MEDIA_CORNER_RADIUS,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#d9dee7',
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: '#0f172a22'
@@ -993,6 +1000,7 @@ const styles = StyleSheet.create({
     marginRight: 10
   },
   heroImageCardDark: {
+    borderColor: '#4b5563',
     backgroundColor: '#02061766'
   },
   heroImage: {
@@ -1500,15 +1508,20 @@ const styles = StyleSheet.create({
   feedPreviewImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 12,
+    borderRadius: 0,
     marginTop: 0
   },
   feedPreviewImageFrame: {
     width: '100%',
     alignSelf: 'stretch',
-    borderRadius: 12,
+    borderRadius: MEDIA_CORNER_RADIUS,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#d9dee7',
     overflow: 'hidden',
     marginTop: 10
+  },
+  feedPreviewImageFrameDark: {
+    borderColor: '#4b5563'
   },
   feedDescription: {
     marginTop: 10,
