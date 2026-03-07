@@ -9,6 +9,8 @@ type SymbolCommunityHomeProps = {
   isDarkMode: boolean;
   isMobileWeb?: boolean;
   selectedSymbol: string;
+  selectedBoardKey: string;
+  selectedBoardName: string;
 };
 
 type StockInfoField = {
@@ -58,7 +60,9 @@ const createStockInfoFields = (symbol?: string): StockInfoField[] => {
 export default function SymbolCommunityHome({
   isDarkMode,
   isMobileWeb = false,
-  selectedSymbol
+  selectedSymbol,
+  selectedBoardKey,
+  selectedBoardName
 }: SymbolCommunityHomeProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const showSidePanel = !isMobileWeb && screenWidth >= SECTOR_BOARD_MIN_WIDTH;
@@ -70,6 +74,9 @@ export default function SymbolCommunityHome({
       `${stockDisplayName}는 커뮤니티 관심도가 높은 종목으로 최근 거래량과 뉴스 모멘텀이 동시에 유입되고 있습니다. 단기 변동성 구간에서는 분할 진입과 손절 기준을 함께 관리하는 전략이 유효합니다.`,
     [stockDisplayName]
   );
+  const followBoardIconUri = selectedBoardKey.startsWith('symbol:')
+    ? getStockIconUri(selectedSymbol)
+    : undefined;
 
   return (
     <ScrollView
@@ -85,6 +92,9 @@ export default function SymbolCommunityHome({
           showSidePanel={showSidePanel}
           feedController={feedController}
           topInset={SYMBOL_TOP_GAP}
+          followBoardKey={selectedBoardKey}
+          followBoardName={selectedBoardName}
+          followBoardIconUri={followBoardIconUri}
         />
 
         {showSidePanel && (

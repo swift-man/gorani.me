@@ -28,15 +28,20 @@ type CommunityContentListProps = {
   showSidePanel: boolean;
   feedController: CommunityFeedController;
   topInset?: number;
+  followBoardKey?: string;
+  followBoardName?: string;
+  followBoardIconUri?: string;
 };
 
 export default function CommunityContentList({
   isDarkMode,
   showSidePanel,
   feedController,
-  topInset = 0
+  topInset = 0,
+  followBoardKey,
+  followBoardName,
+  followBoardIconUri
 }: CommunityContentListProps) {
-  const [joinedPostMap, setJoinedPostMap] = React.useState<Record<string, boolean>>({});
   const portraitPreviewBlurWebStyle = React.useMemo(
     () =>
       Platform.OS === 'web'
@@ -47,12 +52,6 @@ export default function CommunityContentList({
         : null,
     []
   );
-  const onPressJoin = React.useCallback((postId: string) => {
-    setJoinedPostMap((prev) => ({
-      ...prev,
-      [postId]: !prev[postId]
-    }));
-  }, []);
 
   return (
     <>
@@ -75,9 +74,6 @@ export default function CommunityContentList({
         <View style={styles.feedList}>
           {feedController.sortedFeedItems.map((item, index) => (
             <View key={item.id} style={styles.feedItemWrap}>
-              {(() => {
-                const isJoined = !!joinedPostMap[item.id];
-                return (
               <Pressable
                 style={[styles.feedCard, isDarkMode && styles.feedCardDark]}
                 onPress={() => router.push({ pathname: '/communities/detail', params: { symbol: item.symbol } })}
@@ -92,10 +88,9 @@ export default function CommunityContentList({
                   <View style={styles.feedHeaderRight}>
                     <FollowToggleButton
                       isDarkMode={isDarkMode}
-                      isFollowing={isJoined}
-                      boardName={item.stockName}
-                      boardIconUri={getStockIconUri(item.symbol)}
-                      onToggle={() => onPressJoin(item.id)}
+                      boardKey={followBoardKey ?? `symbol:${item.symbol}`}
+                      boardName={followBoardName ?? item.stockName}
+                      boardIconUri={followBoardIconUri ?? getStockIconUri(item.symbol)}
                     />
                     <Pressable style={styles.moreButton} onPress={(event) => feedController.openFeedMenu(item.id, event)}>
                       <MaterialIcons name="more-horiz" size={20} color={isDarkMode ? '#d1d5db' : '#64748b'} />
@@ -179,8 +174,6 @@ export default function CommunityContentList({
                   </Pressable>
                 </View>
               </Pressable>
-                );
-              })()}
               {index < feedController.sortedFeedItems.length - 1 && (
                 <View style={[styles.feedSeparator, isDarkMode && styles.feedSeparatorDark]} />
               )}

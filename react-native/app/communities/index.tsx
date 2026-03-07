@@ -1,14 +1,26 @@
 import React from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import CommunityComposer from '../../src/components/prices/CommunityComposer';
 import MainCommunityHome from '../../src/components/prices/MainCommunityHome';
 import SymbolCommunityHome from '../../src/components/prices/SymbolCommunityHome';
+import {
+  BoardFollowProvider,
+  useBoardFollow
+} from '../../src/components/prices/following/BoardFollowContext';
 import { useWebTheme } from '../../src/theme/WebThemeContext';
 import { getFirstString } from '../../src/utils/routeParams';
 
 export default function CommunitiesMainRoute() {
+  return (
+    <BoardFollowProvider>
+      <CommunitiesMainRouteInner />
+    </BoardFollowProvider>
+  );
+}
+
+function CommunitiesMainRouteInner() {
   const params = useLocalSearchParams<{
     symbol?: string | string[];
     sector?: string | string[];
@@ -16,6 +28,7 @@ export default function CommunitiesMainRoute() {
   }>();
   const { width } = useWindowDimensions();
   const { colors, resolvedMode } = useWebTheme();
+  const { isBoardFollowing } = useBoardFollow();
   const isDarkMode = resolvedMode === 'dark';
   const isMobileWeb = width <= 900;
 
@@ -27,6 +40,43 @@ export default function CommunitiesMainRoute() {
   const isMainCommunity = !selectedSymbol && !selectedSector;
   const shouldRenderFeedLayout = isMainCommunity || isSymbolCommunity || isSectorCommunity;
   const symbolBoardKey = selectedSymbol || selectedSectorName?.trim() || selectedSector || '';
+  const symbolBoardName = selectedSymbol || selectedSectorName?.trim() || selectedSector || '';
+  const activeBoardKey = selectedSymbol
+    ? `symbol:${selectedSymbol}`
+    : selectedSector
+      ? `sector:${selectedSector}`
+      : '';
+  const isActiveBoardFollowing = !!activeBoardKey && isBoardFollowing(activeBoardKey);
+  const shouldShowComposer = !isMainCommunity && isActiveBoardFollowing;
+  const composerReveal = React.useRef(new Animated.Value(shouldShowComposer ? 1 : 0)).current;
+  const [shouldRenderComposer, setShouldRenderComposer] = React.useState(shouldShowComposer);
+
+  React.useEffect(() => {
+    if (shouldShowComposer) {
+      setShouldRenderComposer(true);
+      Animated.timing(composerReveal, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true
+      }).start();
+      return;
+    }
+
+    Animated.timing(composerReveal, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true
+    }).start(({ finished }) => {
+      if (finished) {
+        setShouldRenderComposer(false);
+      }
+    });
+  }, [composerReveal, shouldShowComposer]);
+
+  const composerTranslateY = composerReveal.interpolate({
+    inputRange: [0, 1],
+    outputRange: [14, 0]
+  });
 
   return (
     <View
@@ -42,6 +92,8 @@ export default function CommunitiesMainRoute() {
             isDarkMode={isDarkMode}
             isMobileWeb={isMobileWeb}
             selectedSymbol={symbolBoardKey}
+            selectedBoardKey={activeBoardKey}
+            selectedBoardName={symbolBoardName}
           />
         ) : (
           <MainCommunityHome isDarkMode={isDarkMode} isMobileWeb={isMobileWeb} />
@@ -65,12 +117,19 @@ export default function CommunitiesMainRoute() {
         </View>
       )}
 
-      {!isMainCommunity && (
-        <CommunityComposer
-          isDarkMode={isDarkMode}
-          backgroundColor={colors.detailBackground}
-          isMobileWeb={isMobileWeb}
-        />
+      {shouldRenderComposer && (
+        <Animated.View
+          style={[
+            styles.composerAnimatedWrap,
+            { opacity: composerReveal, transform: [{ translateY: composerTranslateY }] }
+          ]}
+        >
+          <CommunityComposer
+            isDarkMode={isDarkMode}
+            backgroundColor={colors.detailBackground}
+            isMobileWeb={isMobileWeb}
+          />
+        </Animated.View>
       )}
     </View>
   );
@@ -127,5 +186,8 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#ffffff',
     fontWeight: '600'
+  },
+  composerAnimatedWrap: {
+    width: '100%'
   }
 });

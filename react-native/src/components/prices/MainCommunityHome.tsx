@@ -55,7 +55,6 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
   const [newSectorName, setNewSectorName] = React.useState('');
   const [newSectorDescription, setNewSectorDescription] = React.useState('');
   const [sectorAddMenuAnchor, setSectorAddMenuAnchor] = React.useState<{ x: number; y: number } | null>(null);
-  const [joinedSectorMap, setJoinedSectorMap] = React.useState<Record<string, boolean>>({});
   const leftHeroButtonOpacity = React.useRef(new Animated.Value(0)).current;
   const rightHeroButtonOpacity = React.useRef(new Animated.Value(0)).current;
 
@@ -209,13 +208,6 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
     closeSectorAddMenu();
   }, [closeSectorAddMenu, newSectorDescription, newSectorName]);
 
-  const onPressSectorJoin = React.useCallback((sectorId: string) => {
-    setJoinedSectorMap((prev) => ({
-      ...prev,
-      [sectorId]: !prev[sectorId]
-    }));
-  }, []);
-
   return (
     <ScrollView
       style={styles.scroll}
@@ -340,17 +332,11 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
                       <Text style={[styles.sectorName, isDarkMode && styles.sectorNameDark]} numberOfLines={1}>
                         {index + 1}. {sector.name}
                       </Text>
-                      {(() => {
-                        const isJoined = !!joinedSectorMap[sector.id];
-                        return (
-                          <FollowToggleButton
-                            isDarkMode={isDarkMode}
-                            isFollowing={isJoined}
-                            boardName={sector.name}
-                            onToggle={() => onPressSectorJoin(sector.id)}
-                          />
-                        );
-                      })()}
+                      <FollowToggleButton
+                        isDarkMode={isDarkMode}
+                        boardKey={`sector:${sector.id}`}
+                        boardName={sector.name}
+                      />
                     </View>
                     <Text style={[styles.sectorIndustries, isDarkMode && styles.sectorIndustriesDark]} numberOfLines={1}>
                       {sector.industries}
