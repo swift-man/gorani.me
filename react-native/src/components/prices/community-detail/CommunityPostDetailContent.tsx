@@ -519,7 +519,7 @@ export default function CommunityPostDetailContent({
             onPress={() => onToggleReplyComposer(comment.id)}
           >
             <MaterialCommunityIcons
-              name="reply-outline"
+              name="comment-text-outline"
               size={13}
               color={isDarkMode ? '#d1d5db' : '#475569'}
             />
@@ -755,7 +755,8 @@ export default function CommunityPostDetailContent({
           style={[
             styles.commentSection,
             !isDarkMode && styles.bestCommentSectionLight,
-            isDarkMode && styles.commentSectionDark
+            isDarkMode && styles.commentSectionDark,
+            isDarkMode && styles.bestCommentSectionDark
           ]}
         >
           <Text style={[styles.commentSectionTitle, isDarkMode && styles.commentSectionTitleDark]}>베스트 댓글</Text>
@@ -1200,6 +1201,9 @@ const styles = StyleSheet.create({
   },
   bestCommentSectionLight: {
     backgroundColor: '#FEFBF2'
+  },
+  bestCommentSectionDark: {
+    backgroundColor: '#2A3038'
   },
   commentSectionDark: {
     borderTopColor: '#36363B'

@@ -338,7 +338,12 @@ export default function SymbolCommunityHome({
                           </Pressable>
 
                           {isExpanded && (
-                            <View style={[styles.stockInfoSectionBody, isDarkMode && styles.stockInfoSectionBodyDark]}>
+                            <View
+                              style={[
+                                styles.stockInfoSectionBody,
+                                isDarkMode && styles.stockInfoSectionBodyDark
+                              ]}
+                            >
                               {menu.key === 'overview' ? (
                                 <View>
                                   <View style={styles.stockInfoFieldList}>
@@ -459,6 +464,7 @@ const styles = StyleSheet.create({
   stockInfoColumn: {
     flex: 1,
     borderRadius: 0,
+    borderTopLeftRadius: 20,
     borderBottomLeftRadius: 20,
     borderWidth: 0,
     borderColor: 'transparent',
@@ -471,10 +477,13 @@ const styles = StyleSheet.create({
   },
   stockInfoMainSurface: {
     flex: 1,
-    backgroundColor: '#F9FAFA'
+    backgroundColor: '#F9FAFA',
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+    overflow: 'hidden'
   },
   stockInfoMainSurfaceDark: {
-    backgroundColor: '#212429'
+    backgroundColor: '#1C1F20'
   },
   stockInfoColumnInner: {
     flex: 1,
@@ -571,12 +580,12 @@ const styles = StyleSheet.create({
   stockInfoDescriptionCard: {
     marginTop: 10,
     borderRadius: 14,
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'transparent',
     paddingHorizontal: 12,
     paddingVertical: 11
   },
   stockInfoDescriptionCardDark: {
-    backgroundColor: '#1f2732'
+    backgroundColor: 'transparent'
   },
   stockInfoDescriptionText: {
     fontSize: 13,
@@ -676,7 +685,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     backgroundColor: 'transparent',
     marginHorizontal: -STOCK_INFO_CONTENT_INSET,
-    paddingHorizontal: STOCK_INFO_CONTENT_INSET + 12,
+    paddingHorizontal: STOCK_INFO_CONTENT_INSET,
     justifyContent: 'center'
   },
   stockInfoMenuRow: {
@@ -724,10 +733,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 0,
-    backgroundColor: '#F9FAFA'
+    backgroundColor: 'transparent'
   },
   stockInfoSectionBodyDark: {
-    backgroundColor: '#212429'
+    backgroundColor: 'transparent'
   },
   stockInfoFieldList: {
     marginTop: 0
@@ -791,12 +800,12 @@ const styles = StyleSheet.create({
     color: '#cbd5e1'
   },
   stockInfoFooterSurface: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'transparent',
     paddingHorizontal: STOCK_INFO_CONTENT_INSET,
     paddingBottom: STOCK_INFO_CONTENT_INSET
   },
   stockInfoFooterSurfaceDark: {
-    backgroundColor: '#1a1f28'
+    backgroundColor: 'transparent'
   },
   stockInfoFooterWrap: {
     paddingTop: 32

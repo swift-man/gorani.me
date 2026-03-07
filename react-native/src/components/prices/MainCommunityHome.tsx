@@ -5,6 +5,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import {
   Animated,
   Image,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -39,6 +40,7 @@ const FEED_MENU_SCREEN_PADDING = 10;
 const SECTOR_BOARD_MIN_WIDTH = 1000;
 const DEFAULT_NEW_SECTOR_POPULARITY = 120;
 const MEDIA_CORNER_RADIUS = 20;
+const COMMUNITY_FOOTER_LINKS = ['Rules', 'Privacy Policy', 'User Agreement'];
 
 export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: MainCommunityHomeProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
@@ -207,6 +209,9 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
     setNewSectorDescription('');
     closeSectorAddMenu();
   }, [closeSectorAddMenu, newSectorDescription, newSectorName]);
+  const onPressFooterLink = React.useCallback(() => {
+    void Linking.openURL('https://www.naver.com');
+  }, []);
 
   return (
     <ScrollView
@@ -350,6 +355,21 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
                   )}
                 </View>
               ))}
+            </View>
+
+            <View style={[styles.sectorFooterSurface, isDarkMode && styles.sectorFooterSurfaceDark]}>
+              <View style={styles.sectorFooterWrap}>
+                <View style={styles.sectorFooterLinksRow}>
+                  {COMMUNITY_FOOTER_LINKS.map((label) => (
+                    <Pressable key={label} style={styles.sectorFooterLinkItem} onPress={onPressFooterLink}>
+                      <Text style={styles.sectorFooterLinkText}>{label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Pressable onPress={onPressFooterLink}>
+                  <Text style={styles.sectorFooterCopyright}>© 2026. All rights reserved.</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
         )}
@@ -661,6 +681,31 @@ const styles = StyleSheet.create({
   },
   sectorDescriptionDark: {
     color: '#94a3b8'
+  },
+  sectorFooterSurface: {
+    marginTop: 10,
+    paddingTop: 14
+  },
+  sectorFooterSurfaceDark: {
+  },
+  sectorFooterWrap: {
+    paddingTop: 6
+  },
+  sectorFooterLinksRow: {
+    flexDirection: 'column',
+    alignItems: 'flex-start'
+  },
+  sectorFooterLinkItem: {
+    marginBottom: 5
+  },
+  sectorFooterLinkText: {
+    fontSize: 11,
+    fontWeight: '500'
+  },
+  sectorFooterCopyright: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '500'
   },
   feedMenuBackdrop: {
     flex: 1,
