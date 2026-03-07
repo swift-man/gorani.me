@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { Asset } from 'expo-asset';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import {
   ActivityIndicator,
   Image,
@@ -20,9 +21,11 @@ import {
   type CommunityFeedController
 } from './useCommunityFeed';
 import FollowToggleButton from '../common/FollowToggleButton';
+import { useWebTheme } from '../../../theme/WebThemeContext';
 
 const MEDIA_CORNER_RADIUS = 20;
 const AUTHOR_NAMES = ['차트헌터', '볼륨러너', '퀀트고라니', '모멘텀킴', '브레이크아웃', '데이터폭스'];
+const AUTHOR_POST_ATTR = 'data-author-post-id';
 
 const getAuthorName = (id: string, symbol: string) => {
   const symbolMatch = symbol.match(/\d+/)?.[0];
@@ -44,6 +47,21 @@ type CommunityContentListProps = {
   contentVariant?: 'main' | 'board';
 };
 
+type AuthorPopupState = {
+  postId: string;
+  authorName: string;
+  stockName: string;
+  timeAgo: string;
+  left: number;
+  top: number;
+  triggerRect: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  } | null;
+};
+
 export default function CommunityContentList({
   isDarkMode,
   showSidePanel,
@@ -54,7 +72,9 @@ export default function CommunityContentList({
   followBoardIconUri,
   contentVariant = 'main'
 }: CommunityContentListProps) {
-  const [hoveredAuthorPostId, setHoveredAuthorPostId] = React.useState<string | null>(null);
+  const [authorPopup, setAuthorPopup] = React.useState<AuthorPopupState | null>(null);
+  const [voteMap, setVoteMap] = React.useState<Record<string, 'up' | 'down' | null>>({});
+  const { trendColors } = useWebTheme();
   const portraitPreviewBlurWebStyle = React.useMemo(
     () =>
       Platform.OS === 'web'
@@ -65,6 +85,135 @@ export default function CommunityContentList({
         : null,
     []
   );
+  const onPressVoteUp = React.useCallback((postId: string) => {
+    setVoteMap((prev) => ({
+      ...prev,
+      [postId]: prev[postId] === 'up' ? null : 'up'
+    }));
+  }, []);
+  const onPressVoteDown = React.useCallback((postId: string) => {
+    setVoteMap((prev) => ({
+      ...prev,
+      [postId]: prev[postId] === 'down' ? null : 'down'
+    }));
+  }, []);
+  const openAuthorPopup = React.useCallback(
+    (postId: string, authorName: string, stockName: string, timeAgo: string, event: any) => {
+      if (Platform.OS !== 'web') return;
+
+      const targetElement =
+        (event?.currentTarget as HTMLElement | undefined) ??
+        (event?.nativeEvent?.target as HTMLElement | undefined);
+      const rect =
+        targetElement && typeof targetElement.getBoundingClientRect === 'function'
+          ? targetElement.getBoundingClientRect()
+          : null;
+      const clientX = event?.nativeEvent?.clientX ?? event?.nativeEvent?.pageX ?? 20;
+      const clientY = event?.nativeEvent?.clientY ?? event?.nativeEvent?.pageY ?? 20;
+      const left = Math.max(12, (rect?.left ?? clientX) - 10);
+      const top = Math.max(12, (rect?.bottom ?? clientY) + 8);
+
+      setAuthorPopup({
+        postId,
+        authorName,
+        stockName,
+        timeAgo,
+        left,
+        top,
+        triggerRect: rect
+          ? {
+              left: rect.left,
+              top: rect.top,
+              right: rect.right,
+              bottom: rect.bottom
+            }
+          : null
+      });
+    },
+    []
+  );
+  const closeAuthorPopup = React.useCallback(() => {
+    setAuthorPopup(null);
+  }, []);
+
+  React.useEffect(() => {
+    if (Platform.OS !== 'web' || !authorPopup || typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    const getTriggerRect = () => {
+      const trigger = document.querySelector(
+        `[${AUTHOR_POST_ATTR}="${authorPopup.postId}"]`
+      ) as HTMLElement | null;
+      if (!trigger) return null;
+      return trigger.getBoundingClientRect();
+    };
+
+    const isInsideTriggerRect = (clientX: number, clientY: number) => {
+      const rect = authorPopup.triggerRect ?? getTriggerRect();
+      if (!rect) return false;
+
+      const hoverBuffer = 8;
+      return (
+        clientX >= rect.left - hoverBuffer &&
+        clientX <= rect.right + hoverBuffer &&
+        clientY >= rect.top - hoverBuffer &&
+        clientY <= rect.bottom + hoverBuffer
+      );
+    };
+
+    let pendingCloseTimer: number | null = null;
+    const clearPendingClose = () => {
+      if (!pendingCloseTimer) return;
+      window.clearTimeout(pendingCloseTimer);
+      pendingCloseTimer = null;
+    };
+
+    const scheduleClose = () => {
+      if (pendingCloseTimer) return;
+      pendingCloseTimer = window.setTimeout(() => {
+        pendingCloseTimer = null;
+        closeAuthorPopup();
+      }, 80);
+    };
+
+    const onMouseDownWindow = (event: MouseEvent) => {
+      if (isInsideTriggerRect(event.clientX, event.clientY)) return;
+      clearPendingClose();
+      closeAuthorPopup();
+    };
+    const onMouseMoveWindow = (event: MouseEvent) => {
+      if (isInsideTriggerRect(event.clientX, event.clientY)) {
+        clearPendingClose();
+        return;
+      }
+      scheduleClose();
+    };
+
+    const onEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeAuthorPopup();
+      }
+    };
+
+    const onWindowBlur = () => {
+      clearPendingClose();
+      closeAuthorPopup();
+    };
+
+    window.addEventListener('mousedown', onMouseDownWindow, true);
+    window.addEventListener('mousemove', onMouseMoveWindow, true);
+    window.addEventListener('keydown', onEscapeKey);
+    window.addEventListener('blur', onWindowBlur);
+
+    return () => {
+      clearPendingClose();
+      window.removeEventListener('mousedown', onMouseDownWindow, true);
+      window.removeEventListener('mousemove', onMouseMoveWindow, true);
+      window.removeEventListener('keydown', onEscapeKey);
+      window.removeEventListener('blur', onWindowBlur);
+    };
+  }, [authorPopup, closeAuthorPopup]);
 
   return (
     <>
@@ -88,18 +237,21 @@ export default function CommunityContentList({
           {feedController.sortedFeedItems.map((item, index) => {
             const isBoardVariant = contentVariant === 'board';
             const authorName = getAuthorName(item.id, item.symbol);
-            const isAuthorHovered = hoveredAuthorPostId === item.id;
+            const voteState = voteMap[item.id] ?? null;
+            const isUpSelected = voteState === 'up';
+            const isDownSelected = voteState === 'down';
+            const voteBackgroundColor =
+              voteState === 'up'
+                ? trendColors.rise
+                : voteState === 'down'
+                  ? trendColors.fall
+                  : null;
 
             return (
               <View key={item.id} style={styles.feedItemWrap}>
                 <Pressable
                   style={[styles.feedCard, isDarkMode && styles.feedCardDark]}
                   onPress={() => router.push({ pathname: '/communities/detail', params: { symbol: item.symbol } })}
-                  onHoverOut={() => {
-                    if (isAuthorHovered) {
-                      setHoveredAuthorPostId(null);
-                    }
-                  }}
                 >
                 <View style={styles.feedHeader}>
                     <View style={[styles.feedHeaderLeft, isBoardVariant && styles.feedHeaderLeftBoard]}>
@@ -113,9 +265,17 @@ export default function CommunityContentList({
                             {item.stockName}
                           </Text>
                           <View style={styles.feedAuthorLineWrap}>
+                            <View
+                              {...(Platform.OS === 'web'
+                                ? ({ [AUTHOR_POST_ATTR]: item.id } as any)
+                                : {})}
+                            >
                             <Pressable
-                              onHoverIn={() => setHoveredAuthorPostId(item.id)}
-                              onHoverOut={() => setHoveredAuthorPostId((prev) => (prev === item.id ? null : prev))}
+                              style={styles.feedAuthorHoverTrigger}
+                              onHoverIn={(event) =>
+                                openAuthorPopup(item.id, authorName, item.stockName, item.timeAgo, event)
+                              }
+                              onBlur={closeAuthorPopup}
                               onPress={(event) => event.stopPropagation?.()}
                             >
                               <Text
@@ -125,19 +285,7 @@ export default function CommunityContentList({
                                 {authorName}
                               </Text>
                             </Pressable>
-                            {Platform.OS === 'web' && isAuthorHovered ? (
-                              <View style={[styles.feedAuthorPopup, isDarkMode && styles.feedAuthorPopupDark]} pointerEvents="none">
-                                <Text style={[styles.feedAuthorPopupTitle, isDarkMode && styles.feedAuthorPopupTitleDark]}>
-                                  {authorName}
-                                </Text>
-                                <Text style={[styles.feedAuthorPopupText, isDarkMode && styles.feedAuthorPopupTextDark]}>
-                                  관심 종목: {item.stockName}
-                                </Text>
-                                <Text style={[styles.feedAuthorPopupText, isDarkMode && styles.feedAuthorPopupTextDark]}>
-                                  최근 활동: {item.timeAgo}
-                                </Text>
-                              </View>
-                            ) : null}
+                            </View>
                           </View>
                         </View>
                       ) : (
@@ -201,22 +349,42 @@ export default function CommunityContentList({
 
                   <View style={styles.feedActionsRow}>
                     <View style={[styles.feedVoteGroup, isDarkMode && styles.feedVoteGroupDark]}>
-                      <Pressable style={styles.feedVoteLikeButton}>
-                        <MaterialCommunityIcons
-                          name="arrow-up-bold-outline"
-                          size={16}
-                          color={isDarkMode ? '#e2e8f0' : '#475569'}
-                        />
-                        <Text style={[styles.feedVoteLikeText, isDarkMode && styles.feedVoteLikeTextDark]}>
+                      <Pressable
+                        style={[styles.feedVoteLikeButton, voteBackgroundColor && { backgroundColor: voteBackgroundColor }]}
+                        onPress={() => onPressVoteUp(item.id)}
+                      >
+                        {isUpSelected ? (
+                          <MaterialCommunityIcons name="thumb-up" size={16} color="#ffffff" />
+                        ) : (
+                          <SimpleLineIcons
+                            name={'like' as any}
+                            size={15}
+                            color={voteBackgroundColor ? '#ffffff' : isDarkMode ? '#e2e8f0' : '#475569'}
+                          />
+                        )}
+                        <Text
+                          style={[
+                            styles.feedVoteLikeText,
+                            isDarkMode && styles.feedVoteLikeTextDark,
+                            isUpSelected && styles.feedVoteLikeTextSelected
+                          ]}
+                        >
                           {item.likes}
                         </Text>
                       </Pressable>
-                      <Pressable style={styles.feedVoteDislikeButton}>
-                        <MaterialCommunityIcons
-                          name="arrow-down-bold-outline"
-                          size={16}
-                          color={isDarkMode ? '#e2e8f0' : '#475569'}
-                        />
+                      <Pressable
+                        style={[styles.feedVoteDislikeButton, voteBackgroundColor && { backgroundColor: voteBackgroundColor }]}
+                        onPress={() => onPressVoteDown(item.id)}
+                      >
+                        {isDownSelected ? (
+                          <MaterialCommunityIcons name="thumb-down" size={16} color="#ffffff" />
+                        ) : (
+                          <SimpleLineIcons
+                            name={'dislike' as any}
+                            size={15}
+                            color={voteBackgroundColor ? '#ffffff' : isDarkMode ? '#e2e8f0' : '#475569'}
+                          />
+                        )}
                       </Pressable>
                     </View>
                     <Pressable style={[styles.feedCommentButton, isDarkMode && styles.feedOutlineButtonDark]}>
@@ -252,6 +420,38 @@ export default function CommunityContentList({
           </View>
         )}
       </View>
+
+      <Modal
+        visible={Platform.OS === 'web' && !!authorPopup}
+        transparent
+        animationType="none"
+        onRequestClose={closeAuthorPopup}
+      >
+        <View style={styles.authorPopupPortalRoot} pointerEvents="none">
+          {authorPopup ? (
+            <View
+              style={[
+                styles.feedAuthorPopup,
+                isDarkMode && styles.feedAuthorPopupDark,
+                {
+                  left: authorPopup.left,
+                  top: authorPopup.top
+                }
+              ]}
+            >
+              <Text style={[styles.feedAuthorPopupTitle, isDarkMode && styles.feedAuthorPopupTitleDark]}>
+                {authorPopup.authorName}
+              </Text>
+              <Text style={[styles.feedAuthorPopupText, isDarkMode && styles.feedAuthorPopupTextDark]}>
+                관심 종목: {authorPopup.stockName}
+              </Text>
+              <Text style={[styles.feedAuthorPopupText, isDarkMode && styles.feedAuthorPopupTextDark]}>
+                최근 활동: {authorPopup.timeAgo}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </Modal>
 
       <Modal
         visible={feedController.isSortMenuVisible && !!feedController.sortMenuPosition}
@@ -518,6 +718,17 @@ const styles = StyleSheet.create({
   feedMetaBoardAuthorDark: {
     color: '#94a3b8'
   },
+  feedAuthorHoverTrigger: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 3,
+    paddingVertical: 2,
+    marginHorizontal: -3,
+    marginVertical: -2
+  },
+  authorPopupPortalRoot: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent'
+  },
   feedAuthorPopup: {
     position: 'absolute',
     left: 0,
@@ -535,7 +746,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
     elevation: 6,
-    zIndex: 12
+    zIndex: 9999
   },
   feedAuthorPopupDark: {
     borderColor: '#4b5563',
@@ -634,7 +845,7 @@ const styles = StyleSheet.create({
   feedVoteLikeButton: {
     height: '100%',
     paddingLeft: 10,
-    paddingRight: 10,
+    paddingRight: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center'
@@ -648,8 +859,11 @@ const styles = StyleSheet.create({
   feedVoteLikeTextDark: {
     color: '#e2e8f0'
   },
+  feedVoteLikeTextSelected: {
+    color: '#ffffff'
+  },
   feedVoteDislikeButton: {
-    width: 34,
+    width: 28,
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center'
