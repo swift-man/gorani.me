@@ -4,6 +4,8 @@ import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native
 import { getStockIconUri } from '../../constants/stockIcons';
 import {
   FLOW_COLUMN_WIDTH,
+  INSTITUTION_COLUMN_EXTRA_WIDTH,
+  INSTITUTION_COLUMN_RIGHT_PADDING,
   LIGHT_SIDEBAR_BACKGROUND,
   LIST_HORIZONTAL_MARGIN,
   LIST_HORIZONTAL_PADDING,
@@ -58,6 +60,7 @@ export default function SidebarQuoteRow({
   onPressQuote
 }: SidebarQuoteRowProps) {
   const priceChangeColorStyle = getSignedColorStyle(item.changeRate, isDarkMode, trendColors);
+  const isFlowDataUnavailable = item.isFlowDataUnavailable === true;
   const stockIconUri = getStockIconUri(item.symbol);
   const titleIconColor =
     item.titleIconName === 'newspaper-outline'
@@ -92,101 +95,109 @@ export default function SidebarQuoteRow({
         { backgroundColor: isDarkMode ? detailBackground : LIGHT_SIDEBAR_BACKGROUND }
       ]}
     >
-      <View
-        style={[
-          styles.symbolColumn,
-          isTwoColumnLayout && styles.symbolColumnTwoColumn,
-          isMobileLayout && styles.symbolColumnMobile,
-          stickySymbolWebStyle
-        ]}
-      >
-        <View style={styles.symbolIcon}>
-          <Image source={{ uri: stockIconUri }} style={styles.symbolIconImage} />
-        </View>
-        <View style={styles.symbolMeta}>
-          <View style={styles.symbolMetaTopRow}>
-            <Text
-              style={[
-                styles.symbolNameTop,
-                isDarkMode && styles.symbolNameTopDark,
-                layoutMode >= 3 && styles.symbolNameTopCompact,
-                noWrapOverflowWebStyle
-              ]}
-            >
-              {item.stockName}
-            </Text>
-            {item.titleIconName ? (
-              <Ionicons
-                name={item.titleIconName as any}
-                size={11}
-                style={styles.symbolNameTopIcon}
-                color={titleIconColor}
-              />
-            ) : null}
+      <View style={styles.listItemContent} pointerEvents="none">
+        <View
+          style={[
+            styles.symbolColumn,
+            isTwoColumnLayout && styles.symbolColumnTwoColumn,
+            isMobileLayout && styles.symbolColumnMobile,
+            stickySymbolWebStyle
+          ]}
+        >
+          <View style={styles.symbolIcon}>
+            <Image source={{ uri: stockIconUri }} style={styles.symbolIconImage} />
           </View>
-          <Text style={[styles.symbol, isDarkMode && styles.symbolDark, noWrapOverflowWebStyle]}>
-            {item.symbol}
+          <View style={styles.symbolMeta}>
+            <View style={styles.symbolMetaTopRow}>
+              <Text
+                style={[
+                  styles.symbolNameTop,
+                  isDarkMode && styles.symbolNameTopDark,
+                  layoutMode >= 3 && styles.symbolNameTopCompact,
+                  noWrapOverflowWebStyle
+                ]}
+              >
+                {item.stockName}
+              </Text>
+              {item.titleIconName ? (
+                <Ionicons
+                  name={item.titleIconName as any}
+                  size={11}
+                  style={styles.symbolNameTopIcon}
+                  color={titleIconColor}
+                />
+              ) : null}
+            </View>
+            <Text style={[styles.symbol, isDarkMode && styles.symbolDark, noWrapOverflowWebStyle]}>
+              {item.symbol}
+            </Text>
+          </View>
+        </View>
+        <View
+          style={[
+            styles.priceInfoColumn,
+            isTwoColumnLayout && styles.priceInfoColumnTwoColumn,
+            isMobileLayout && styles.priceInfoColumnMobile
+          ]}
+        >
+          <Text style={[styles.priceTop, priceChangeColorStyle, noWrapOverflowWebStyle]}>
+            {item.currentPrice}
+          </Text>
+          <Text style={[styles.priceBottom, priceChangeColorStyle, noWrapOverflowWebStyle]}>
+            {item.changeAmount} {item.changePercent}
           </Text>
         </View>
+        {!hideVolumeColumn && (
+          <View style={styles.volumeInfoColumn}>
+            <Text style={[styles.metricValue, isDarkMode && styles.metricValueDark]} numberOfLines={1}>
+              {item.volume}
+            </Text>
+          </View>
+        )}
+        {!hideFlowColumns && (
+          <>
+            <View style={styles.personalInfoColumn}>
+              <Text
+                style={[
+                  styles.metricSignedValue,
+                  isFlowDataUnavailable
+                    ? styles.metricUnavailableValue
+                    : getSignedColorStyle(item.personalFlowValue, isDarkMode, trendColors)
+                ]}
+                numberOfLines={1}
+              >
+                {isFlowDataUnavailable ? '-' : item.personalFlow}
+              </Text>
+            </View>
+            <View style={styles.foreignInfoColumn}>
+              <Text
+                style={[
+                  styles.metricSignedValue,
+                  isFlowDataUnavailable
+                    ? styles.metricUnavailableValue
+                    : getSignedColorStyle(item.foreignFlowValue, isDarkMode, trendColors)
+                ]}
+                numberOfLines={1}
+              >
+                {isFlowDataUnavailable ? '-' : item.foreignFlow}
+              </Text>
+            </View>
+            <View style={styles.institutionInfoColumn}>
+              <Text
+                style={[
+                  styles.metricSignedValue,
+                  isFlowDataUnavailable
+                    ? styles.metricUnavailableValue
+                    : getSignedColorStyle(item.institutionalFlowValue, isDarkMode, trendColors)
+                ]}
+                numberOfLines={1}
+              >
+                {isFlowDataUnavailable ? '-' : item.institutionalFlow}
+              </Text>
+            </View>
+          </>
+        )}
       </View>
-      <View
-        style={[
-          styles.priceInfoColumn,
-          isTwoColumnLayout && styles.priceInfoColumnTwoColumn,
-          isMobileLayout && styles.priceInfoColumnMobile
-        ]}
-      >
-        <Text style={[styles.priceTop, priceChangeColorStyle, noWrapOverflowWebStyle]}>
-          {item.currentPrice}
-        </Text>
-        <Text style={[styles.priceBottom, priceChangeColorStyle, noWrapOverflowWebStyle]}>
-          {item.changeAmount} {item.changePercent}
-        </Text>
-      </View>
-      {!hideVolumeColumn && (
-        <View style={styles.volumeInfoColumn}>
-          <Text style={[styles.metricValue, isDarkMode && styles.metricValueDark]} numberOfLines={1}>
-            {item.volume}
-          </Text>
-        </View>
-      )}
-      {!hideFlowColumns && (
-        <>
-          <View style={styles.personalInfoColumn}>
-            <Text
-              style={[
-                styles.metricSignedValue,
-                getSignedColorStyle(item.personalFlowValue, isDarkMode, trendColors)
-              ]}
-              numberOfLines={1}
-            >
-              {item.personalFlow}
-            </Text>
-          </View>
-          <View style={styles.foreignInfoColumn}>
-            <Text
-              style={[
-                styles.metricSignedValue,
-                getSignedColorStyle(item.foreignFlowValue, isDarkMode, trendColors)
-              ]}
-              numberOfLines={1}
-            >
-              {item.foreignFlow}
-            </Text>
-          </View>
-          <View style={styles.institutionInfoColumn}>
-            <Text
-              style={[
-                styles.metricSignedValue,
-                getSignedColorStyle(item.institutionalFlowValue, isDarkMode, trendColors)
-              ]}
-              numberOfLines={1}
-            >
-              {item.institutionalFlow}
-            </Text>
-          </View>
-        </>
-      )}
     </Pressable>
   );
 }
@@ -194,11 +205,17 @@ export default function SidebarQuoteRow({
 const styles = StyleSheet.create({
   listItem: {
     height: ROW_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: LIST_HORIZONTAL_PADDING,
     marginHorizontal: LIST_HORIZONTAL_MARGIN,
-    overflow: 'visible'
+    overflow: 'visible',
+    width: '100%',
+    alignSelf: 'stretch'
+  },
+  listItemContent: {
+    height: '100%',
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   symbolColumn: {
     width: SYMBOL_COLUMN_WIDTH,
@@ -297,7 +314,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   institutionInfoColumn: {
-    width: FLOW_COLUMN_WIDTH,
+    width: FLOW_COLUMN_WIDTH + INSTITUTION_COLUMN_EXTRA_WIDTH,
+    paddingRight: INSTITUTION_COLUMN_RIGHT_PADDING,
     alignItems: 'flex-end',
     justifyContent: 'center'
   },
@@ -313,6 +331,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#334155'
+  },
+  metricUnavailableValue: {
+    color: '#000000'
   },
   neutralValueLight: {
     color: '#000000'

@@ -592,6 +592,14 @@ export default function MarketSidebar({ mode = 'desktop' }: MarketSidebarProps) 
             </Pressable>
           )}
         </View>
+        {!collapsed && (
+          <View
+            style={[
+              styles.leftPanelTopBarDivider,
+              isDarkMode && styles.leftPanelTopBarDividerDark
+            ]}
+          />
+        )}
 
         {!collapsed &&
           (isSectorTabActive ? (
@@ -756,20 +764,28 @@ const styles = StyleSheet.create({
     paddingLeft: 14,
     paddingRight: 8,
     justifyContent: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: LIGHT_SIDEBAR_BORDER,
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
     backgroundColor: LIGHT_SIDEBAR_BACKGROUND,
     position: 'relative'
   },
   leftPanelTopBarDark: {
-    backgroundColor: '#212429',
-    borderBottomColor: DARK_BORDER_COLOR
+    backgroundColor: '#212429'
   },
   leftPanelTopBarCollapsed: {
     borderBottomWidth: 0,
     borderRadius: 12,
     paddingLeft: 0,
     paddingRight: 0
+  },
+  leftPanelTopBarDivider: {
+    height: ROW_SEPARATOR_HEIGHT,
+    marginLeft: 0,
+    marginRight: 0,
+    backgroundColor: LIGHT_SIDEBAR_BORDER
+  },
+  leftPanelTopBarDividerDark: {
+    backgroundColor: DARK_BORDER_COLOR
   },
   leftPanelTitleWrap: {
     position: 'absolute',
@@ -925,7 +941,8 @@ const styles = StyleSheet.create({
   },
   listSeparator: {
     height: ROW_SEPARATOR_HEIGHT,
-    marginHorizontal: LIST_HORIZONTAL_MARGIN,
+    marginLeft: LIST_HORIZONTAL_MARGIN + LIST_HORIZONTAL_PADDING,
+    marginRight: LIST_HORIZONTAL_MARGIN,
     backgroundColor: LIGHT_SIDEBAR_BORDER
   },
   listSeparatorDark: {

@@ -11,12 +11,15 @@ export const SYMBOL_COLUMN_WIDTH_MOBILE = 132;
 export const PRICE_COLUMN_WIDTH_MOBILE = 84;
 export const VOLUME_COLUMN_WIDTH = 80;
 export const FLOW_COLUMN_WIDTH = 66;
+export const INSTITUTION_COLUMN_EXTRA_WIDTH = 10;
+export const INSTITUTION_COLUMN_RIGHT_PADDING = LIST_HORIZONTAL_PADDING + 10;
 export const SIDEBAR_TABLE_MIN_WIDTH =
   LIST_HORIZONTAL_PADDING * 2 +
   SYMBOL_COLUMN_WIDTH +
   PRICE_COLUMN_WIDTH +
   VOLUME_COLUMN_WIDTH +
-  FLOW_COLUMN_WIDTH * 3;
+  FLOW_COLUMN_WIDTH * 3 +
+  INSTITUTION_COLUMN_EXTRA_WIDTH;
 export const SCROLL_HINT_HEIGHT = 22;
 export const MIN_PANEL_WIDTH = 220;
 export const COLLAPSED_PANEL_WIDTH = 56;
@@ -48,6 +51,7 @@ export type QuoteItem = {
   personalFlowValue: number;
   foreignFlowValue: number;
   institutionalFlowValue: number;
+  isFlowDataUnavailable?: boolean;
 };
 
 const formatMan = (value: number) => `${value.toLocaleString('ko-KR')}만`;
@@ -63,7 +67,8 @@ export const getLayoutMode = (panelWidth: number): LayoutMode => {
 export const mockQuotes: QuoteItem[] = Array.from({ length: 80 }, (_, index) => {
   const rank = index + 1;
   const symbol = `KRW-COIN${rank}`;
-  const stockName = `코인 ${rank}`;
+  const isFlowDataUnavailable = rank === 1 || rank === 2;
+  const stockName = rank === 1 ? '비트코인' : rank === 2 ? '나스닥100' : `코인 ${rank}`;
   const currentPriceNumber = 1000 + rank * 17;
   const currentPrice = currentPriceNumber.toLocaleString();
   const changeRate = Number((((rank % 19) - 9) * 0.37).toFixed(2));
@@ -73,9 +78,11 @@ export const mockQuotes: QuoteItem[] = Array.from({ length: 80 }, (_, index) => 
   const volumeInMan = 327000 + rank * 351;
   const titleIconName =
     rank % 7 === 0 ? 'newspaper-outline' : rank % 11 === 0 ? 'document-text-outline' : null;
-  const personalFlowValue = (rank % 13 - 6) * 130;
-  const foreignFlowValue = (rank % 11 - 5) * 95;
-  const institutionalFlowValue = -Math.round((personalFlowValue + foreignFlowValue) * 0.8);
+  const personalFlowValue = isFlowDataUnavailable ? 0 : (rank % 13 - 6) * 130;
+  const foreignFlowValue = isFlowDataUnavailable ? 0 : (rank % 11 - 5) * 95;
+  const institutionalFlowValue = isFlowDataUnavailable
+    ? 0
+    : -Math.round((personalFlowValue + foreignFlowValue) * 0.8);
 
   return {
     rank,
@@ -87,11 +94,12 @@ export const mockQuotes: QuoteItem[] = Array.from({ length: 80 }, (_, index) => 
     changeAmount,
     volume: formatMan(volumeInMan),
     titleIconName,
-    personalFlow: formatSignedMan(personalFlowValue),
-    foreignFlow: formatSignedMan(foreignFlowValue),
-    institutionalFlow: formatSignedMan(institutionalFlowValue),
+    personalFlow: isFlowDataUnavailable ? '-' : formatSignedMan(personalFlowValue),
+    foreignFlow: isFlowDataUnavailable ? '-' : formatSignedMan(foreignFlowValue),
+    institutionalFlow: isFlowDataUnavailable ? '-' : formatSignedMan(institutionalFlowValue),
     personalFlowValue,
     foreignFlowValue,
-    institutionalFlowValue
+    institutionalFlowValue,
+    isFlowDataUnavailable
   };
 });
