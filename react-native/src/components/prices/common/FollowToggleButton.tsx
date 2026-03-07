@@ -1,10 +1,10 @@
 import React from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useBoardFollow } from '../following/BoardFollowContext';
 
 type FollowToggleButtonProps = {
   isDarkMode: boolean;
-  isFollowing: boolean;
-  onToggle: () => void;
+  boardKey: string;
   boardName?: string;
   boardIconUri?: string;
   followLabel?: string;
@@ -13,15 +13,24 @@ type FollowToggleButtonProps = {
 
 export default function FollowToggleButton({
   isDarkMode,
-  isFollowing,
-  onToggle,
+  boardKey,
   boardName,
   boardIconUri,
   followLabel = '팔로우',
   followingLabel = '팔로잉'
 }: FollowToggleButtonProps) {
+  const {
+    isBoardFollowing,
+    followBoard,
+    unfollowBoard,
+    hasShownFirstFollowPopup,
+    markFirstFollowPopupShown
+  } = useBoardFollow();
+
+  const isFollowing = isBoardFollowing(boardKey);
   const [isHovered, setIsHovered] = React.useState(false);
   const [isFollowPopupVisible, setIsFollowPopupVisible] = React.useState(false);
+  const [isPendingFollowCommit, setIsPendingFollowCommit] = React.useState(false);
 
   const isFollowingActive = isFollowing && isHovered;
   const resolvedColor = isFollowing
@@ -36,6 +45,16 @@ export default function FollowToggleButton({
   const resolvedBoardName = boardName?.trim();
   const hasBoardTitle = !!resolvedBoardName;
 
+  const closePopup = React.useCallback(() => {
+    setIsFollowPopupVisible(false);
+    setIsPendingFollowCommit((prev) => {
+      if (prev) {
+        followBoard(boardKey);
+      }
+      return false;
+    });
+  }, [boardKey, followBoard]);
+
   return (
     <>
       <Pressable
@@ -49,10 +68,20 @@ export default function FollowToggleButton({
         ]}
         onPress={(event) => {
           event.stopPropagation?.();
-          if (!isFollowing) {
-            setIsFollowPopupVisible(true);
+          if (isFollowing) {
+            unfollowBoard(boardKey);
+            return;
           }
-          onToggle();
+
+          const shouldShowPopup = !hasShownFirstFollowPopup(boardKey);
+          if (shouldShowPopup) {
+            markFirstFollowPopupShown(boardKey);
+            setIsPendingFollowCommit(true);
+            setIsFollowPopupVisible(true);
+            return;
+          }
+
+          followBoard(boardKey);
         }}
         onHoverIn={() => setIsHovered(true)}
         onHoverOut={() => setIsHovered(false)}
@@ -66,9 +95,9 @@ export default function FollowToggleButton({
         visible={isFollowPopupVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setIsFollowPopupVisible(false)}
+        onRequestClose={closePopup}
       >
-        <Pressable style={styles.popupBackdrop} onPress={() => setIsFollowPopupVisible(false)}>
+        <Pressable style={styles.popupBackdrop} onPress={closePopup}>
           <Pressable
             style={[styles.popupCard, isDarkMode && styles.popupCardDark]}
             onPress={(event) => event.stopPropagation?.()}
@@ -95,7 +124,7 @@ export default function FollowToggleButton({
             </View>
             <Pressable
               style={[styles.popupConfirmButton, isDarkMode && styles.popupConfirmButtonDark]}
-              onPress={() => setIsFollowPopupVisible(false)}
+              onPress={closePopup}
             >
               <Text style={[styles.popupConfirmButtonText, isDarkMode && styles.popupConfirmButtonTextDark]}>
                 확인
