@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     paddingBottom: 18
   },
   composerOuterMobile: {
-    paddingHorizontal: 0
+    paddingHorizontal: 10
   },
   composerInner: {
     height: 48,
