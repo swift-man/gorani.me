@@ -92,10 +92,6 @@ export default function CommunityContentList({
                   {item.title}
                 </Text>
 
-                <Text style={[styles.feedDescription, isDarkMode && styles.feedDescriptionDark]} numberOfLines={6}>
-                  {item.description}
-                </Text>
-
                 {item.previewImage
                   ? (() => {
                       const previewAsset = Asset.fromModule(item.previewImage);
@@ -126,7 +122,11 @@ export default function CommunityContentList({
                         </View>
                       );
                     })()
-                  : null}
+                  : (
+                    <Text style={[styles.feedDescription, isDarkMode && styles.feedDescriptionDark]} numberOfLines={6}>
+                      {item.description}
+                    </Text>
+                  )}
 
                 <View style={styles.feedActionsRow}>
                   <View style={[styles.feedVoteGroup, isDarkMode && styles.feedVoteGroupDark]}>
