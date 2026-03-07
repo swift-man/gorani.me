@@ -2,6 +2,7 @@ import React from 'react';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { getStockIconUri } from '../../constants/stockIcons';
+import CommunityPostDetailContent from './community-detail/CommunityPostDetailContent';
 import CommunityContentList from './community-feed/CommunityContentList';
 import { useCommunityFeed } from './community-feed/useCommunityFeed';
 import FollowToggleButton from './common/FollowToggleButton';
@@ -12,6 +13,7 @@ type SymbolCommunityHomeProps = {
   selectedSymbol: string;
   selectedBoardKey: string;
   selectedBoardName: string;
+  contentMode?: 'list' | 'detail';
 };
 
 type StockInfoField = {
@@ -106,11 +108,13 @@ export default function SymbolCommunityHome({
   isMobileWeb = false,
   selectedSymbol,
   selectedBoardKey,
-  selectedBoardName
+  selectedBoardName,
+  contentMode = 'list'
 }: SymbolCommunityHomeProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const showSidePanel = !isMobileWeb && screenWidth >= SECTOR_BOARD_MIN_WIDTH;
   const feedController = useCommunityFeed({ screenWidth, screenHeight });
+  const isDetailMode = contentMode === 'detail';
   const stockDisplayName = React.useMemo(() => getStockDisplayName(selectedSymbol), [selectedSymbol]);
   const stockInfoFields = React.useMemo(() => createStockInfoFields(selectedSymbol), [selectedSymbol]);
   const communityRoleInfo = React.useMemo(
@@ -146,19 +150,28 @@ export default function SymbolCommunityHome({
       ]}
       showsVerticalScrollIndicator
       scrollEventThrottle={16}
-      onScroll={feedController.handleScroll}
+      onScroll={isDetailMode ? undefined : feedController.handleScroll}
     >
       <View style={[styles.mainBodyRow, showSidePanel && styles.mainBodyRowWide]}>
-        <CommunityContentList
-          isDarkMode={isDarkMode}
-          showSidePanel={showSidePanel}
-          feedController={feedController}
-          topInset={SYMBOL_TOP_GAP}
-          followBoardKey={selectedBoardKey}
-          followBoardName={selectedBoardName}
-          followBoardIconUri={followBoardIconUri}
-          contentVariant="board"
-        />
+        {isDetailMode ? (
+          <CommunityPostDetailContent
+            isDarkMode={isDarkMode}
+            showSidePanel={showSidePanel}
+            selectedSymbol={selectedSymbol}
+            topInset={SYMBOL_TOP_GAP}
+          />
+        ) : (
+          <CommunityContentList
+            isDarkMode={isDarkMode}
+            showSidePanel={showSidePanel}
+            feedController={feedController}
+            topInset={SYMBOL_TOP_GAP}
+            followBoardKey={selectedBoardKey}
+            followBoardName={selectedBoardName}
+            followBoardIconUri={followBoardIconUri}
+            contentVariant="board"
+          />
+        )}
 
         {showSidePanel && (
           <View style={styles.stockInfoWrap}>

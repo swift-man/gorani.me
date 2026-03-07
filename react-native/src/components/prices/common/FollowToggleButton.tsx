@@ -116,10 +116,10 @@ export default function FollowToggleButton({
             <Image source={require('../../../assets/following.png')} style={styles.popupImage} resizeMode="cover" />
             <View style={styles.popupDescriptionWrap}>
               <Text style={[styles.popupDescription, isDarkMode && styles.popupDescriptionDark]}>
-                이 게시판에 글을 쓸 수 있습니다
+                이 게시판의 글이 홈에 노출 됩니다.
               </Text>
               <Text style={[styles.popupDescription, styles.popupDescriptionSecond, isDarkMode && styles.popupDescriptionDark]}>
-                게시판이 즐겨찾기에 추가되었습니다
+                이 게시판의 활동이 알림으로 발송 됩니다.
               </Text>
             </View>
             <Pressable
