@@ -157,6 +157,7 @@ export default function SymbolCommunityHome({
           followBoardKey={selectedBoardKey}
           followBoardName={selectedBoardName}
           followBoardIconUri={followBoardIconUri}
+          contentVariant="board"
         />
 
         {showSidePanel && (
