@@ -22,6 +22,11 @@ export type FeedCardItem = {
   shares: number;
 };
 
+export const MAX_FEED_PAGE_COUNT = 8;
+
+export const hasFeedPage = (pageNumber: number): boolean =>
+  Number.isFinite(pageNumber) && pageNumber >= 0 && pageNumber < MAX_FEED_PAGE_COUNT;
+
 export const MAIN_HERO_ITEMS: MainHeroItem[] = [
   {
     id: 'main-1',
@@ -148,7 +153,9 @@ const MAIN_FEED_ITEMS: FeedCardItem[] = [
 ];
 
 export const createFeedPageItems = (pageNumber: number): FeedCardItem[] =>
-  MAIN_FEED_ITEMS.map((item, index) => {
+  !hasFeedPage(pageNumber)
+    ? []
+    : MAIN_FEED_ITEMS.map((item, index) => {
     const likesDelta = pageNumber * (14 + index * 3);
     const dislikesDelta = pageNumber * (index % 3);
     const commentsDelta = pageNumber * (6 + index * 2);
@@ -159,13 +166,13 @@ export const createFeedPageItems = (pageNumber: number): FeedCardItem[] =>
         ? item.timeAgo
         : `${Math.max(1, Number.parseInt(item.timeAgo, 10) + extraHours)}시간 전`;
 
-    return {
-      ...item,
-      id: `${item.id}-p${pageNumber}`,
-      timeAgo,
-      likes: item.likes + likesDelta,
-      dislikes: item.dislikes + dislikesDelta,
-      comments: item.comments + commentsDelta,
-      shares: item.shares + sharesDelta
-    };
-  });
+      return {
+        ...item,
+        id: `${item.id}-p${pageNumber}`,
+        timeAgo,
+        likes: item.likes + likesDelta,
+        dislikes: item.dislikes + dislikesDelta,
+        comments: item.comments + commentsDelta,
+        shares: item.shares + sharesDelta
+      };
+    });
