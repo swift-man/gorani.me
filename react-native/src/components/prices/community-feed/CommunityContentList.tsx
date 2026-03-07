@@ -93,6 +93,8 @@ export default function CommunityContentList({
                     <FollowToggleButton
                       isDarkMode={isDarkMode}
                       isFollowing={isJoined}
+                      boardName={item.stockName}
+                      boardIconUri={getStockIconUri(item.symbol)}
                       onToggle={() => onPressJoin(item.id)}
                     />
                     <Pressable style={styles.moreButton} onPress={(event) => feedController.openFeedMenu(item.id, event)}>

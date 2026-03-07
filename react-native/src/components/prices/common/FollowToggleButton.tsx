@@ -1,10 +1,12 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 type FollowToggleButtonProps = {
   isDarkMode: boolean;
   isFollowing: boolean;
   onToggle: () => void;
+  boardName?: string;
+  boardIconUri?: string;
   followLabel?: string;
   followingLabel?: string;
 };
@@ -13,10 +15,13 @@ export default function FollowToggleButton({
   isDarkMode,
   isFollowing,
   onToggle,
+  boardName,
+  boardIconUri,
   followLabel = '팔로우',
   followingLabel = '팔로잉'
 }: FollowToggleButtonProps) {
   const [isHovered, setIsHovered] = React.useState(false);
+  const [isFollowPopupVisible, setIsFollowPopupVisible] = React.useState(false);
 
   const isFollowingActive = isFollowing && isHovered;
   const resolvedColor = isFollowing
@@ -28,28 +33,78 @@ export default function FollowToggleButton({
         ? '#000000'
         : '#1f2937'
     : '#ffffff';
+  const resolvedBoardName = boardName?.trim();
+  const hasBoardTitle = !!resolvedBoardName;
 
   return (
-    <Pressable
-      style={[
-        styles.button,
-        isFollowing && styles.buttonFollowing,
-        isFollowing && isDarkMode && styles.buttonFollowingDark,
-        isFollowing && isDarkMode && isHovered && styles.buttonFollowingDarkHover,
-        isFollowing && !isDarkMode && styles.buttonFollowingLight,
-        isFollowing && !isDarkMode && isHovered && styles.buttonFollowingLightHover
-      ]}
-      onPress={(event) => {
-        event.stopPropagation?.();
-        onToggle();
-      }}
-      onHoverIn={() => setIsHovered(true)}
-      onHoverOut={() => setIsHovered(false)}
-    >
-      <Text style={[styles.buttonText, { color: resolvedColor }]}>
-        {isFollowing ? followingLabel : followLabel}
-      </Text>
-    </Pressable>
+    <>
+      <Pressable
+        style={[
+          styles.button,
+          isFollowing && styles.buttonFollowing,
+          isFollowing && isDarkMode && styles.buttonFollowingDark,
+          isFollowing && isDarkMode && isHovered && styles.buttonFollowingDarkHover,
+          isFollowing && !isDarkMode && styles.buttonFollowingLight,
+          isFollowing && !isDarkMode && isHovered && styles.buttonFollowingLightHover
+        ]}
+        onPress={(event) => {
+          event.stopPropagation?.();
+          if (!isFollowing) {
+            setIsFollowPopupVisible(true);
+          }
+          onToggle();
+        }}
+        onHoverIn={() => setIsHovered(true)}
+        onHoverOut={() => setIsHovered(false)}
+      >
+        <Text style={[styles.buttonText, { color: resolvedColor }]}>
+          {isFollowing ? followingLabel : followLabel}
+        </Text>
+      </Pressable>
+
+      <Modal
+        visible={isFollowPopupVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsFollowPopupVisible(false)}
+      >
+        <Pressable style={styles.popupBackdrop} onPress={() => setIsFollowPopupVisible(false)}>
+          <Pressable
+            style={[styles.popupCard, isDarkMode && styles.popupCardDark]}
+            onPress={(event) => event.stopPropagation?.()}
+          >
+            {hasBoardTitle ? (
+              <View style={styles.popupBoardHeader}>
+                {boardIconUri ? (
+                  <Image source={{ uri: boardIconUri }} style={styles.popupBoardIcon} resizeMode="cover" />
+                ) : null}
+                <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>{resolvedBoardName}</Text>
+              </View>
+            ) : null}
+            <Text style={[styles.popupSubtitle, isDarkMode && styles.popupSubtitleDark]}>
+              게시판을 팔로우 했습니다.
+            </Text>
+            <Image source={require('../../../assets/following.png')} style={styles.popupImage} resizeMode="cover" />
+            <View style={styles.popupDescriptionWrap}>
+              <Text style={[styles.popupDescription, isDarkMode && styles.popupDescriptionDark]}>
+                이 게시판에 글을 쓸 수 있습니다
+              </Text>
+              <Text style={[styles.popupDescription, styles.popupDescriptionSecond, isDarkMode && styles.popupDescriptionDark]}>
+                게시판이 즐겨찾기에 추가되었습니다
+              </Text>
+            </View>
+            <Pressable
+              style={[styles.popupConfirmButton, isDarkMode && styles.popupConfirmButtonDark]}
+              onPress={() => setIsFollowPopupVisible(false)}
+            >
+              <Text style={[styles.popupConfirmButtonText, isDarkMode && styles.popupConfirmButtonTextDark]}>
+                확인
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -83,5 +138,102 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#ffffff'
+  },
+  popupBackdrop: {
+    flex: 1,
+    paddingHorizontal: 24,
+    backgroundColor: 'rgba(2, 6, 23, 0.56)',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  popupCard: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#d6dde6',
+    backgroundColor: '#ffffff',
+    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    alignItems: 'center'
+  },
+  popupCardDark: {
+    backgroundColor: '#161c2b',
+    borderColor: '#384253'
+  },
+  popupTitle: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '700',
+    color: '#0f172a',
+    textAlign: 'center'
+  },
+  popupTitleDark: {
+    color: '#f8fafc'
+  },
+  popupBoardHeader: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  popupBoardIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    marginRight: 8
+  },
+  popupSubtitle: {
+    marginTop: 2,
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '700',
+    color: '#0f172a',
+    textAlign: 'center'
+  },
+  popupSubtitleDark: {
+    color: '#f8fafc'
+  },
+  popupImage: {
+    width: '100%',
+    height: 188,
+    marginTop: 6
+  },
+  popupDescriptionWrap: {
+    marginTop: 6,
+    alignSelf: 'stretch'
+  },
+  popupDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#334155',
+    textAlign: 'left'
+  },
+  popupDescriptionSecond: {
+    marginTop: 2
+  },
+  popupDescriptionDark: {
+    color: '#cbd5e1'
+  },
+  popupConfirmButton: {
+    marginTop: 10,
+    height: 44,
+    alignSelf: 'stretch',
+    borderRadius: 12,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  popupConfirmButtonDark: {
+    backgroundColor: '#f1f5f9'
+  },
+  popupConfirmButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#f8fafc'
+  },
+  popupConfirmButtonTextDark: {
+    color: '#0f172a'
   }
 });

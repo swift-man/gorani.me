@@ -346,6 +346,7 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
                           <FollowToggleButton
                             isDarkMode={isDarkMode}
                             isFollowing={isJoined}
+                            boardName={sector.name}
                             onToggle={() => onPressSectorJoin(sector.id)}
                           />
                         );
