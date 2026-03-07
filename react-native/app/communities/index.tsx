@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-na
 
 import CommunityComposer from '../../src/components/prices/CommunityComposer';
 import MainCommunityHome from '../../src/components/prices/MainCommunityHome';
+import SymbolCommunityHome from '../../src/components/prices/SymbolCommunityHome';
 import { useWebTheme } from '../../src/theme/WebThemeContext';
 import { getFirstString } from '../../src/utils/routeParams';
 
@@ -21,12 +22,11 @@ export default function CommunitiesMainRoute() {
   const selectedSymbol = getFirstString(params.symbol);
   const selectedSector = getFirstString(params.sector);
   const selectedSectorName = getFirstString(params.sectorName);
+  const isSymbolCommunity = !!selectedSymbol;
+  const isSectorCommunity = !!selectedSector;
   const isMainCommunity = !selectedSymbol && !selectedSector;
-  const communityTitle = selectedSymbol
-    ? `${selectedSymbol} 커뮤니티`
-    : selectedSector
-      ? `${selectedSectorName ?? selectedSector} 커뮤니티`
-      : '메인 커뮤니티';
+  const shouldRenderFeedLayout = isMainCommunity || isSymbolCommunity || isSectorCommunity;
+  const symbolBoardKey = selectedSymbol || selectedSectorName?.trim() || selectedSector || '';
 
   return (
     <View
@@ -36,12 +36,16 @@ export default function CommunitiesMainRoute() {
         { backgroundColor: colors.detailBackground }
       ]}
     >
-      <View style={[styles.mainTopBar, isDarkMode && styles.mainTopBarDark, isMobileWeb && styles.mainTopBarMobile]}>
-        <Text style={[styles.mainTopBarTitle, isDarkMode && styles.mainTopBarTitleDark]}>{communityTitle}</Text>
-      </View>
-
-      {isMainCommunity ? (
-        <MainCommunityHome isDarkMode={isDarkMode} isMobileWeb={isMobileWeb} />
+      {shouldRenderFeedLayout ? (
+        isSymbolCommunity || isSectorCommunity ? (
+          <SymbolCommunityHome
+            isDarkMode={isDarkMode}
+            isMobileWeb={isMobileWeb}
+            selectedSymbol={symbolBoardKey}
+          />
+        ) : (
+          <MainCommunityHome isDarkMode={isDarkMode} isMobileWeb={isMobileWeb} />
+        )
       ) : (
         <View style={styles.mainContent}>
           <Text style={[styles.title, isDarkMode && styles.titleDark]}>
@@ -73,8 +77,8 @@ export default function CommunitiesMainRoute() {
 const styles = StyleSheet.create({
   mainArea: {
     flex: 1,
-    marginLeft: 20,
-    marginRight: 20,
+    marginLeft: 10,
+    marginRight: 10,
     marginBottom: 20,
     marginTop: 0,
     borderRadius: 20,
@@ -85,30 +89,6 @@ const styles = StyleSheet.create({
     marginRight: 0,
     marginBottom: 0,
     borderRadius: 0
-  },
-  mainTopBar: {
-    height: 48,
-    paddingHorizontal: 16,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    justifyContent: 'center'
-  },
-  mainTopBarDark: {
-    borderBottomColor: '#36363B'
-  },
-  mainTopBarMobile: {
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0
-  },
-  mainTopBarTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a'
-  },
-  mainTopBarTitleDark: {
-    color: '#e2e8f0'
   },
   mainContent: {
     flex: 1,
