@@ -50,6 +50,13 @@ type FeedMenuState = {
   report: boolean;
 };
 
+type SectorSortKey = 'best' | 'newest' | 'views';
+
+type SectorSortOption = {
+  key: SectorSortKey;
+  label: string;
+};
+
 const NEXT_PAGE_LOAD_DELAY_MS = 720;
 const BOTTOM_LOAD_THRESHOLD = 140;
 const HERO_SCROLL_EDGE_THRESHOLD = 10;
@@ -62,6 +69,9 @@ const SECTOR_ADD_MENU_HEIGHT = 174;
 const SECTOR_ADD_MENU_OFFSET_Y = 6;
 const SECTOR_BOARD_MIN_WIDTH = 1000;
 const DEFAULT_NEW_SECTOR_POPULARITY = 120;
+const SECTOR_SORT_MENU_WIDTH = 132;
+const SECTOR_SORT_MENU_HEIGHT = 146;
+const SECTOR_SORT_MENU_OFFSET_Y = 6;
 
 const FEED_MENU_ACTIONS: FeedMenuAction[] = [
   {
@@ -97,6 +107,12 @@ const DEFAULT_FEED_MENU_STATE: FeedMenuState = {
   report: false
 };
 
+const SECTOR_SORT_OPTIONS: SectorSortOption[] = [
+  { key: 'best', label: '베스트' },
+  { key: 'newest', label: '신규' },
+  { key: 'views', label: '조회수' }
+];
+
 export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: MainCommunityHomeProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const heroItems = React.useMemo(() => MAIN_HERO_ITEMS.slice(0, 6), []);
@@ -114,6 +130,10 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
   const [postMenuStateMap, setPostMenuStateMap] = React.useState<Record<string, FeedMenuState>>({});
   const [sectorBoardItems, setSectorBoardItems] = React.useState<SectorBoardItem[]>(
     () => createInitialSectorBoardItems()
+  );
+  const [sectorSortKey, setSectorSortKey] = React.useState<SectorSortKey>('best');
+  const [sectorSortMenuAnchor, setSectorSortMenuAnchor] = React.useState<{ x: number; y: number } | null>(
+    null
   );
   const [newSectorName, setNewSectorName] = React.useState('');
   const [newSectorDescription, setNewSectorDescription] = React.useState('');
@@ -252,10 +272,77 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
     },
     [closeFeedMenu, menuPostId]
   );
+  const sortedFeedItems = React.useMemo(() => {
+    if (sectorSortKey === 'newest') {
+      return [...feedItems].reverse();
+    }
+
+    if (sectorSortKey === 'views') {
+      return [...feedItems].sort((a, b) => {
+        const aViews = a.likes * 10 + a.comments * 16 + a.shares * 12;
+        const bViews = b.likes * 10 + b.comments * 16 + b.shares * 12;
+        if (bViews !== aViews) return bViews - aViews;
+        return b.likes - a.likes;
+      });
+    }
+
+    return [...feedItems].sort((a, b) => {
+      const aBest = a.likes * 8 + a.comments * 10 + a.shares * 6;
+      const bBest = b.likes * 8 + b.comments * 10 + b.shares * 6;
+      if (bBest !== aBest) return bBest - aBest;
+      return b.likes - a.likes;
+    });
+  }, [feedItems, sectorSortKey]);
   const sortedSectorBoardItems = React.useMemo(
     () => sortSectorBoardItemsByPopularity(sectorBoardItems),
     [sectorBoardItems]
   );
+  const selectedSectorSortOption = React.useMemo(
+    () => SECTOR_SORT_OPTIONS.find((option) => option.key === sectorSortKey) ?? SECTOR_SORT_OPTIONS[0],
+    [sectorSortKey]
+  );
+  const openSectorSortMenu = React.useCallback((event: any) => {
+    const rawX =
+      event?.nativeEvent?.pageX ??
+      event?.nativeEvent?.locationX ??
+      FEED_MENU_SCREEN_PADDING;
+    const rawY =
+      event?.nativeEvent?.pageY ??
+      event?.nativeEvent?.locationY ??
+      FEED_MENU_SCREEN_PADDING;
+
+    setSectorSortMenuAnchor({
+      x: rawX,
+      y: rawY
+    });
+  }, []);
+  const closeSectorSortMenu = React.useCallback(() => {
+    setSectorSortMenuAnchor(null);
+  }, []);
+  const onSelectSectorSort = React.useCallback((nextSortKey: SectorSortKey) => {
+    setSectorSortKey(nextSortKey);
+    setSectorSortMenuAnchor(null);
+  }, []);
+  const sectorSortMenuPosition = React.useMemo(() => {
+    if (!sectorSortMenuAnchor) return null;
+
+    const left = Math.max(
+      FEED_MENU_SCREEN_PADDING,
+      Math.min(
+        screenWidth - SECTOR_SORT_MENU_WIDTH - FEED_MENU_SCREEN_PADDING,
+        sectorSortMenuAnchor.x - SECTOR_SORT_MENU_WIDTH + 26
+      )
+    );
+    const top = Math.max(
+      FEED_MENU_SCREEN_PADDING,
+      Math.min(
+        screenHeight - SECTOR_SORT_MENU_HEIGHT - FEED_MENU_SCREEN_PADDING,
+        sectorSortMenuAnchor.y + SECTOR_SORT_MENU_OFFSET_Y
+      )
+    );
+
+    return { left, top };
+  }, [screenHeight, screenWidth, sectorSortMenuAnchor]);
   const openSectorAddMenu = React.useCallback((event: any) => {
     const rawX =
       event?.nativeEvent?.pageX ??
@@ -485,8 +572,27 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
 
       <View style={[styles.mainBodyRow, showSectorBoard && styles.mainBodyRowWide]}>
         <View style={[styles.feedColumn, showSectorBoard ? styles.feedColumnWide : styles.feedColumnSingle]}>
+          <View style={[styles.communityListTopBar, isDarkMode && styles.communityListTopBarDark]}>
+            <Pressable
+              style={[
+                styles.sectorSortMenuButton,
+                isDarkMode && styles.sectorSortMenuButtonDark
+              ]}
+              onPress={openSectorSortMenu}
+            >
+              <Text style={[styles.sectorBoardSubTitle, isDarkMode && styles.sectorBoardSubTitleDark]}>
+                {selectedSectorSortOption.label}
+              </Text>
+              <MaterialCommunityIcons
+                name="chevron-down"
+                size={14}
+                color={isDarkMode ? '#cbd5e1' : '#475569'}
+                style={styles.sectorSortMenuIcon}
+              />
+            </Pressable>
+          </View>
           <View style={styles.feedList}>
-            {feedItems.map((item, index) => (
+            {sortedFeedItems.map((item, index) => (
               <View key={item.id} style={styles.feedItemWrap}>
                 <Pressable
                   style={[styles.feedCard, isDarkMode && styles.feedCardDark]}
@@ -567,7 +673,7 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
                     </Pressable>
                   </View>
                 </Pressable>
-                {index < feedItems.length - 1 && (
+                {index < sortedFeedItems.length - 1 && (
                   <View style={[styles.feedSeparator, isDarkMode && styles.feedSeparatorDark]} />
                 )}
               </View>
@@ -589,9 +695,6 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
             <View style={[styles.sectorBoardHeader, isDarkMode && styles.sectorBoardHeaderDark]}>
               <Text style={[styles.sectorBoardTitle, isDarkMode && styles.sectorBoardTitleDark]}>섹터 게시판</Text>
               <View style={styles.sectorBoardHeaderRight}>
-                <Text style={[styles.sectorBoardSubTitle, isDarkMode && styles.sectorBoardSubTitleDark]}>
-                  인기순
-                </Text>
                 <Pressable
                   style={[styles.sectorAddMiniButton, isDarkMode && styles.sectorAddMiniButtonDark]}
                   onPress={openSectorAddMenu}
@@ -658,6 +761,61 @@ export default function MainCommunityHome({ isDarkMode, isMobileWeb = false }: M
           </View>
         )}
       </View>
+
+      <Modal
+        visible={!!sectorSortMenuAnchor && !!sectorSortMenuPosition}
+        transparent
+        animationType="fade"
+        onRequestClose={closeSectorSortMenu}
+      >
+        <Pressable style={styles.feedMenuBackdrop} onPress={closeSectorSortMenu}>
+          {sectorSortMenuPosition ? (
+            <View
+              style={[
+                styles.sectorSortMenuSheet,
+                isDarkMode && styles.sectorSortMenuSheetDark,
+                {
+                  left: sectorSortMenuPosition.left,
+                  top: sectorSortMenuPosition.top
+                }
+              ]}
+            >
+              <View style={[styles.sectorSortMenuHeader, isDarkMode && styles.sectorSortMenuHeaderDark]}>
+                <Text style={[styles.sectorSortMenuHeaderText, isDarkMode && styles.sectorSortMenuHeaderTextDark]}>
+                  정렬
+                </Text>
+              </View>
+              {SECTOR_SORT_OPTIONS.map((option, index) => {
+                const isSelected = option.key === sectorSortKey;
+
+                return (
+                  <Pressable
+                    key={option.key}
+                    style={[
+                      styles.sectorSortMenuItem,
+                      isDarkMode && styles.sectorSortMenuItemDark,
+                      index < SECTOR_SORT_OPTIONS.length - 1 && styles.sectorSortMenuItemDivider,
+                      index < SECTOR_SORT_OPTIONS.length - 1 && isDarkMode && styles.sectorSortMenuItemDividerDark
+                    ]}
+                    onPress={() => onSelectSectorSort(option.key)}
+                  >
+                    <Text
+                      style={[
+                        styles.sectorSortMenuItemText,
+                        isDarkMode && styles.sectorSortMenuItemTextDark,
+                        isSelected && styles.sectorSortMenuItemTextSelected,
+                        isSelected && isDarkMode && styles.sectorSortMenuItemTextSelectedDark
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+        </Pressable>
+      </Modal>
 
       <Modal
         visible={!!menuAnchor && !!feedMenuPosition}
@@ -927,6 +1085,19 @@ const styles = StyleSheet.create({
   feedColumnSingle: {
     flex: 1
   },
+  communityListTopBar: {
+    height: 36,
+    paddingHorizontal: 4,
+    marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0'
+  },
+  communityListTopBarDark: {
+    borderBottomColor: '#36363B'
+  },
   feedList: {
     paddingTop: 4
   },
@@ -958,6 +1129,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center'
   },
+  sectorSortMenuButton: {
+    height: 28,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  sectorSortMenuButtonDark: {
+    borderColor: 'transparent',
+    backgroundColor: 'transparent'
+  },
+  sectorSortMenuIcon: {
+    marginLeft: 4
+  },
   sectorBoardTitle: {
     fontSize: 16,
     fontWeight: '800',
@@ -973,6 +1161,73 @@ const styles = StyleSheet.create({
   },
   sectorBoardSubTitleDark: {
     color: '#cbd5e1'
+  },
+  sectorSortMenuSheet: {
+    position: 'absolute',
+    width: SECTOR_SORT_MENU_WIDTH,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10,
+    overflow: 'hidden'
+  },
+  sectorSortMenuSheetDark: {
+    borderColor: '#36363B',
+    backgroundColor: '#212429'
+  },
+  sectorSortMenuHeader: {
+    height: 32,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    backgroundColor: '#f8fafc',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0'
+  },
+  sectorSortMenuHeaderDark: {
+    backgroundColor: '#27303a',
+    borderBottomColor: '#36363B'
+  },
+  sectorSortMenuHeaderText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94a3b8'
+  },
+  sectorSortMenuHeaderTextDark: {
+    color: '#94a3b8'
+  },
+  sectorSortMenuItem: {
+    height: 38,
+    justifyContent: 'center',
+    paddingHorizontal: 10
+  },
+  sectorSortMenuItemDark: {
+    backgroundColor: '#212429'
+  },
+  sectorSortMenuItemDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0'
+  },
+  sectorSortMenuItemDividerDark: {
+    borderBottomColor: '#36363B'
+  },
+  sectorSortMenuItemText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a'
+  },
+  sectorSortMenuItemTextDark: {
+    color: '#e2e8f0'
+  },
+  sectorSortMenuItemTextSelected: {
+    color: '#0f172a'
+  },
+  sectorSortMenuItemTextSelectedDark: {
+    color: '#ffffff'
   },
   sectorAddMiniButton: {
     width: 28,
