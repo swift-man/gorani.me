@@ -22,6 +22,16 @@ import {
 import FollowToggleButton from '../common/FollowToggleButton';
 
 const MEDIA_CORNER_RADIUS = 20;
+const AUTHOR_NAMES = ['차트헌터', '볼륨러너', '퀀트고라니', '모멘텀킴', '브레이크아웃', '데이터폭스'];
+
+const getAuthorName = (id: string, symbol: string) => {
+  const symbolMatch = symbol.match(/\d+/)?.[0];
+  const symbolSeq = symbolMatch ? Number.parseInt(symbolMatch, 10) : 0;
+  const idSeq = Number.parseInt(id.replace(/\D/g, ''), 10);
+  const seq = Number.isFinite(symbolSeq) ? symbolSeq : 0;
+  const index = Number.isFinite(idSeq) ? (idSeq + seq) % AUTHOR_NAMES.length : seq % AUTHOR_NAMES.length;
+  return AUTHOR_NAMES[Math.abs(index)];
+};
 
 type CommunityContentListProps = {
   isDarkMode: boolean;
@@ -31,6 +41,7 @@ type CommunityContentListProps = {
   followBoardKey?: string;
   followBoardName?: string;
   followBoardIconUri?: string;
+  contentVariant?: 'main' | 'board';
 };
 
 export default function CommunityContentList({
@@ -40,8 +51,10 @@ export default function CommunityContentList({
   topInset = 0,
   followBoardKey,
   followBoardName,
-  followBoardIconUri
+  followBoardIconUri,
+  contentVariant = 'main'
 }: CommunityContentListProps) {
+  const [hoveredAuthorPostId, setHoveredAuthorPostId] = React.useState<string | null>(null);
   const portraitPreviewBlurWebStyle = React.useMemo(
     () =>
       Platform.OS === 'web'
@@ -72,113 +85,162 @@ export default function CommunityContentList({
         <View style={[styles.communityListTopBarDivider, isDarkMode && styles.communityListTopBarDividerDark]} />
 
         <View style={styles.feedList}>
-          {feedController.sortedFeedItems.map((item, index) => (
-            <View key={item.id} style={styles.feedItemWrap}>
-              <Pressable
-                style={[styles.feedCard, isDarkMode && styles.feedCardDark]}
-                onPress={() => router.push({ pathname: '/communities/detail', params: { symbol: item.symbol } })}
-              >
+          {feedController.sortedFeedItems.map((item, index) => {
+            const isBoardVariant = contentVariant === 'board';
+            const authorName = getAuthorName(item.id, item.symbol);
+            const isAuthorHovered = hoveredAuthorPostId === item.id;
+
+            return (
+              <View key={item.id} style={styles.feedItemWrap}>
+                <Pressable
+                  style={[styles.feedCard, isDarkMode && styles.feedCardDark]}
+                  onPress={() => router.push({ pathname: '/communities/detail', params: { symbol: item.symbol } })}
+                  onHoverOut={() => {
+                    if (isAuthorHovered) {
+                      setHoveredAuthorPostId(null);
+                    }
+                  }}
+                >
                 <View style={styles.feedHeader}>
-                  <View style={styles.feedHeaderLeft}>
-                    <Image source={{ uri: getStockIconUri(item.symbol) }} style={styles.feedSymbolIcon} />
-                    <Text style={[styles.feedMetaText, isDarkMode && styles.feedMetaTextDark]} numberOfLines={1}>
-                      {item.stockName} • {item.timeAgo}
-                    </Text>
-                  </View>
-                  <View style={styles.feedHeaderRight}>
-                    <FollowToggleButton
-                      isDarkMode={isDarkMode}
-                      boardKey={followBoardKey ?? `symbol:${item.symbol}`}
-                      boardName={followBoardName ?? item.stockName}
-                      boardIconUri={followBoardIconUri ?? getStockIconUri(item.symbol)}
-                    />
-                    <Pressable style={styles.moreButton} onPress={(event) => feedController.openFeedMenu(item.id, event)}>
-                      <MaterialIcons name="more-horiz" size={20} color={isDarkMode ? '#d1d5db' : '#64748b'} />
-                    </Pressable>
-                  </View>
-                </View>
-
-                <Text style={[styles.feedTitle, isDarkMode && styles.feedTitleDark]} numberOfLines={1}>
-                  {item.title}
-                </Text>
-
-                {item.previewImage
-                  ? (() => {
-                      const previewAsset = Asset.fromModule(item.previewImage);
-                      const previewAspectRatio =
-                        item.previewAspectRatio ??
-                        (previewAsset?.width && previewAsset?.height
-                          ? previewAsset.width / previewAsset.height
-                          : 16 / 9);
-                      const isPortraitPreview = previewAspectRatio < 1;
-
-                      return (
-                        <View
-                          style={[
-                            styles.feedPreviewImageFrame,
-                            isDarkMode && styles.feedPreviewImageFrameDark,
-                            { aspectRatio: isPortraitPreview ? 1 : previewAspectRatio }
-                          ]}
-                        >
-                          {isPortraitPreview ? (
-                            <Image
-                              source={item.previewImage}
-                              style={[styles.feedPreviewBlurBackground, portraitPreviewBlurWebStyle]}
-                              resizeMode="cover"
-                              blurRadius={22}
-                            />
-                          ) : null}
-                          <Image source={item.previewImage} style={styles.feedPreviewImage} resizeMode="contain" />
+                    <View style={[styles.feedHeaderLeft, isBoardVariant && styles.feedHeaderLeftBoard]}>
+                      <Image
+                        source={{ uri: getStockIconUri(item.symbol) }}
+                        style={[styles.feedSymbolIcon, isBoardVariant && styles.feedSymbolIconBoard]}
+                      />
+                      {isBoardVariant ? (
+                        <View style={styles.feedMetaBoardBlock}>
+                          <Text style={[styles.feedMetaBoardTop, isDarkMode && styles.feedMetaBoardTopDark]} numberOfLines={1}>
+                            {item.stockName}
+                          </Text>
+                          <View style={styles.feedAuthorLineWrap}>
+                            <Pressable
+                              onHoverIn={() => setHoveredAuthorPostId(item.id)}
+                              onHoverOut={() => setHoveredAuthorPostId((prev) => (prev === item.id ? null : prev))}
+                              onPress={(event) => event.stopPropagation?.()}
+                            >
+                              <Text
+                                style={[styles.feedMetaBoardAuthor, isDarkMode && styles.feedMetaBoardAuthorDark]}
+                                numberOfLines={1}
+                              >
+                                {authorName}
+                              </Text>
+                            </Pressable>
+                            {Platform.OS === 'web' && isAuthorHovered ? (
+                              <View style={[styles.feedAuthorPopup, isDarkMode && styles.feedAuthorPopupDark]} pointerEvents="none">
+                                <Text style={[styles.feedAuthorPopupTitle, isDarkMode && styles.feedAuthorPopupTitleDark]}>
+                                  {authorName}
+                                </Text>
+                                <Text style={[styles.feedAuthorPopupText, isDarkMode && styles.feedAuthorPopupTextDark]}>
+                                  관심 종목: {item.stockName}
+                                </Text>
+                                <Text style={[styles.feedAuthorPopupText, isDarkMode && styles.feedAuthorPopupTextDark]}>
+                                  최근 활동: {item.timeAgo}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
                         </View>
-                      );
-                    })()
-                  : (
-                    <Text style={[styles.feedDescription, isDarkMode && styles.feedDescriptionDark]} numberOfLines={6}>
-                      {item.description}
-                    </Text>
-                  )}
+                      ) : (
+                        <Text style={[styles.feedMetaText, isDarkMode && styles.feedMetaTextDark]} numberOfLines={1}>
+                          {item.stockName} • {item.timeAgo}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.feedHeaderRight}>
+                      <FollowToggleButton
+                        isDarkMode={isDarkMode}
+                        boardKey={followBoardKey ?? `symbol:${item.symbol}`}
+                        boardName={followBoardName ?? item.stockName}
+                        boardIconUri={followBoardIconUri ?? getStockIconUri(item.symbol)}
+                      />
+                      <Pressable style={styles.moreButton} onPress={(event) => feedController.openFeedMenu(item.id, event)}>
+                        <MaterialIcons name="more-horiz" size={20} color={isDarkMode ? '#d1d5db' : '#64748b'} />
+                      </Pressable>
+                    </View>
+                  </View>
 
-                <View style={styles.feedActionsRow}>
-                  <View style={[styles.feedVoteGroup, isDarkMode && styles.feedVoteGroupDark]}>
-                    <Pressable style={styles.feedVoteLikeButton}>
+                  <Text style={[styles.feedTitle, isDarkMode && styles.feedTitleDark]} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+
+                  {item.previewImage
+                    ? (() => {
+                        const previewAsset = Asset.fromModule(item.previewImage);
+                        const previewAspectRatio =
+                          item.previewAspectRatio ??
+                          (previewAsset?.width && previewAsset?.height
+                            ? previewAsset.width / previewAsset.height
+                            : 16 / 9);
+                        const isPortraitPreview = previewAspectRatio < 1;
+
+                        return (
+                          <View
+                            style={[
+                              styles.feedPreviewImageFrame,
+                              isDarkMode && styles.feedPreviewImageFrameDark,
+                              { aspectRatio: isPortraitPreview ? 1 : previewAspectRatio }
+                            ]}
+                          >
+                            {isPortraitPreview ? (
+                              <Image
+                                source={item.previewImage}
+                                style={[styles.feedPreviewBlurBackground, portraitPreviewBlurWebStyle]}
+                                resizeMode="cover"
+                                blurRadius={22}
+                              />
+                            ) : null}
+                            <Image source={item.previewImage} style={styles.feedPreviewImage} resizeMode="contain" />
+                          </View>
+                        );
+                      })()
+                    : (
+                      <Text style={[styles.feedDescription, isDarkMode && styles.feedDescriptionDark]} numberOfLines={6}>
+                        {item.description}
+                      </Text>
+                    )}
+
+                  <View style={styles.feedActionsRow}>
+                    <View style={[styles.feedVoteGroup, isDarkMode && styles.feedVoteGroupDark]}>
+                      <Pressable style={styles.feedVoteLikeButton}>
+                        <MaterialCommunityIcons
+                          name="arrow-up-bold-outline"
+                          size={16}
+                          color={isDarkMode ? '#e2e8f0' : '#475569'}
+                        />
+                        <Text style={[styles.feedVoteLikeText, isDarkMode && styles.feedVoteLikeTextDark]}>
+                          {item.likes}
+                        </Text>
+                      </Pressable>
+                      <Pressable style={styles.feedVoteDislikeButton}>
+                        <MaterialCommunityIcons
+                          name="arrow-down-bold-outline"
+                          size={16}
+                          color={isDarkMode ? '#e2e8f0' : '#475569'}
+                        />
+                      </Pressable>
+                    </View>
+                    <Pressable style={[styles.feedCommentButton, isDarkMode && styles.feedOutlineButtonDark]}>
                       <MaterialCommunityIcons
-                        name="arrow-up-bold-outline"
+                        name="comment-text-outline"
                         size={16}
                         color={isDarkMode ? '#e2e8f0' : '#475569'}
                       />
-                      <Text style={[styles.feedVoteLikeText, isDarkMode && styles.feedVoteLikeTextDark]}>
-                        {item.likes}
+                      <Text style={[styles.feedCommentCountText, isDarkMode && styles.feedCommentCountTextDark]}>
+                        {item.comments}
                       </Text>
                     </Pressable>
-                    <Pressable style={[styles.feedVoteDislikeButton, isDarkMode && styles.feedVoteDislikeButtonDark]}>
-                      <MaterialCommunityIcons
-                        name="arrow-down-bold-outline"
-                        size={16}
-                        color={isDarkMode ? '#e2e8f0' : '#475569'}
-                      />
+                    <Pressable style={[styles.feedShareButton, isDarkMode && styles.feedOutlineButtonDark]}>
+                      <MaterialIcons name={'ios-share' as any} size={16} color={isDarkMode ? '#e2e8f0' : '#475569'} />
+                      <Text style={[styles.feedShareButtonText, isDarkMode && styles.feedShareButtonTextDark]}>공유</Text>
                     </Pressable>
                   </View>
-                  <Pressable style={[styles.feedCommentButton, isDarkMode && styles.feedOutlineButtonDark]}>
-                    <MaterialCommunityIcons
-                      name="comment-text-outline"
-                      size={16}
-                      color={isDarkMode ? '#e2e8f0' : '#475569'}
-                    />
-                    <Text style={[styles.feedCommentCountText, isDarkMode && styles.feedCommentCountTextDark]}>
-                      {item.comments}
-                    </Text>
-                  </Pressable>
-                  <Pressable style={[styles.feedShareButton, isDarkMode && styles.feedOutlineButtonDark]}>
-                    <MaterialIcons name={'ios-share' as any} size={16} color={isDarkMode ? '#e2e8f0' : '#475569'} />
-                    <Text style={[styles.feedShareButtonText, isDarkMode && styles.feedShareButtonTextDark]}>공유</Text>
-                  </Pressable>
-                </View>
-              </Pressable>
-              {index < feedController.sortedFeedItems.length - 1 && (
-                <View style={[styles.feedSeparator, isDarkMode && styles.feedSeparatorDark]} />
-              )}
-            </View>
-          ))}
+                </Pressable>
+                {index < feedController.sortedFeedItems.length - 1 && (
+                  <View style={[styles.feedSeparator, isDarkMode && styles.feedSeparatorDark]} />
+                )}
+              </View>
+            );
+          })}
         </View>
 
         {feedController.isLoadingNextPage && (
@@ -405,10 +467,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center'
   },
+  feedHeaderLeftBoard: {
+    alignItems: 'flex-start'
+  },
   feedSymbolIcon: {
     width: 22,
     height: 22,
     borderRadius: 7
+  },
+  feedSymbolIconBoard: {
+    width: 30,
+    height: 30,
+    borderRadius: 10
   },
   feedMetaText: {
     marginLeft: 8,
@@ -417,6 +487,75 @@ const styles = StyleSheet.create({
     color: '#475569'
   },
   feedMetaTextDark: {
+    color: '#cbd5e1'
+  },
+  feedMetaBoardBlock: {
+    marginLeft: 8,
+    minWidth: 0,
+    flex: 1,
+    height: 30,
+    justifyContent: 'space-between'
+  },
+  feedMetaBoardTop: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '600',
+    color: '#475569'
+  },
+  feedMetaBoardTopDark: {
+    color: '#cbd5e1'
+  },
+  feedAuthorLineWrap: {
+    position: 'relative',
+    alignSelf: 'flex-start'
+  },
+  feedMetaBoardAuthor: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '600',
+    color: '#64748b'
+  },
+  feedMetaBoardAuthorDark: {
+    color: '#94a3b8'
+  },
+  feedAuthorPopup: {
+    position: 'absolute',
+    left: 0,
+    top: 20,
+    minWidth: 170,
+    maxWidth: 220,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 6,
+    zIndex: 12
+  },
+  feedAuthorPopupDark: {
+    borderColor: '#4b5563',
+    backgroundColor: '#1f2732'
+  },
+  feedAuthorPopupTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0f172a'
+  },
+  feedAuthorPopupTitleDark: {
+    color: '#f8fafc'
+  },
+  feedAuthorPopupText: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#475569'
+  },
+  feedAuthorPopupTextDark: {
     color: '#cbd5e1'
   },
   feedHeaderRight: {
@@ -512,13 +651,8 @@ const styles = StyleSheet.create({
   feedVoteDislikeButton: {
     width: 34,
     height: '100%',
-    borderLeftWidth: 1,
-    borderLeftColor: '#d1d5db',
     alignItems: 'center',
     justifyContent: 'center'
-  },
-  feedVoteDislikeButtonDark: {
-    borderLeftColor: '#4b5563'
   },
   feedCommentButton: {
     height: 32,
