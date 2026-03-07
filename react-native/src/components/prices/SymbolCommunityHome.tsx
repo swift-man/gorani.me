@@ -20,8 +20,8 @@ type StockInfoField = {
 const SECTOR_BOARD_MIN_WIDTH = 1000;
 const STOCK_INFO_MENU_ITEMS = ['주요 정보', '재무', '실적', '배당', '동종 업계 비교', '애널리스트 분석'];
 const SYMBOL_TOP_GAP = 6;
-const SORT_BAR_HEIGHT = 36;
-const STOCK_INFO_TOP_OFFSET = SYMBOL_TOP_GAP + SORT_BAR_HEIGHT;
+const STOCK_INFO_TOP_OFFSET = SYMBOL_TOP_GAP;
+const STOCK_INFO_CONTENT_INSET = 12;
 
 const getSymbolSequence = (symbol?: string): number => {
   const matched = symbol?.match(/\d+/)?.[0];
@@ -88,95 +88,98 @@ export default function SymbolCommunityHome({
         />
 
         {showSidePanel && (
-          <View style={[styles.stockInfoColumn, isDarkMode && styles.stockInfoColumnDark]}>
-            <View style={styles.stockInfoHeadRow}>
-              <View style={styles.stockInfoIdentityWrap}>
-                <Image source={{ uri: getStockIconUri(selectedSymbol) }} style={styles.stockInfoIcon} />
-                <View style={styles.stockInfoIdentityTextWrap}>
-                  <Text style={[styles.stockInfoName, isDarkMode && styles.stockInfoNameDark]} numberOfLines={1}>
-                    {stockDisplayName}
-                  </Text>
-                  <Text style={[styles.stockInfoMeta, isDarkMode && styles.stockInfoMetaDark]} numberOfLines={1}>
-                    {selectedSymbol}
-                  </Text>
-                </View>
-              </View>
-              <Pressable style={[styles.stockInfoHomeButton, isDarkMode && styles.stockInfoHomeButtonDark]}>
-                <MaterialCommunityIcons
-                  name="open-in-new"
-                  size={14}
-                  color={isDarkMode ? '#e2e8f0' : '#0f172a'}
-                  style={styles.stockInfoHomeButtonIcon}
-                />
-                <Text style={[styles.stockInfoHomeButtonText, isDarkMode && styles.stockInfoHomeButtonTextDark]}>
-                  홈페이지
-                </Text>
-              </Pressable>
-            </View>
-
-            <Text style={[styles.stockInfoSourceText, isDarkMode && styles.stockInfoSourceTextDark]}>
-              출처: 커뮤니티 집계 및 내부 더미 데이터
-            </Text>
-
-            <View style={[styles.stockInfoDescriptionCard, isDarkMode && styles.stockInfoDescriptionCardDark]}>
-              <Text style={[styles.stockInfoDescriptionText, isDarkMode && styles.stockInfoDescriptionTextDark]}>
-                {stockInfoDescription}
-              </Text>
-            </View>
-
-            <View style={styles.stockInfoMenuList}>
-              {STOCK_INFO_MENU_ITEMS.map((menu, index) => {
-                const isActive = index === 0;
-                return (
-                  <Pressable
-                    key={menu}
-                    style={[
-                      styles.stockInfoMenuItem,
-                      isDarkMode && styles.stockInfoMenuItemDark,
-                      isActive && styles.stockInfoMenuItemActive,
-                      isActive && isDarkMode && styles.stockInfoMenuItemActiveDark
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.stockInfoMenuItemText,
-                        isDarkMode && styles.stockInfoMenuItemTextDark,
-                        isActive && styles.stockInfoMenuItemTextActive,
-                        isActive && isDarkMode && styles.stockInfoMenuItemTextActiveDark
-                      ]}
-                    >
-                      {menu}
+          <View style={styles.stockInfoWrap}>
+            <View style={[styles.stockInfoDivider, isDarkMode && styles.stockInfoDividerDark]} />
+            <View style={[styles.stockInfoColumn, isDarkMode && styles.stockInfoColumnDark]}>
+              <View style={styles.stockInfoHeadRow}>
+                <View style={styles.stockInfoIdentityWrap}>
+                  <Image source={{ uri: getStockIconUri(selectedSymbol) }} style={styles.stockInfoIcon} />
+                  <View style={styles.stockInfoIdentityTextWrap}>
+                    <Text style={[styles.stockInfoName, isDarkMode && styles.stockInfoNameDark]} numberOfLines={1}>
+                      {stockDisplayName}
                     </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={styles.stockInfoFieldList}>
-              {stockInfoFields.map((field, index) => (
-                <View
-                  key={field.label}
-                  style={[
-                    styles.stockInfoFieldRow,
-                    index < stockInfoFields.length - 1 && styles.stockInfoFieldRowDivider,
-                    index < stockInfoFields.length - 1 && isDarkMode && styles.stockInfoFieldRowDividerDark
-                  ]}
-                >
-                  <Text style={[styles.stockInfoFieldLabel, isDarkMode && styles.stockInfoFieldLabelDark]}>
-                    {field.label}
-                  </Text>
-                  <View style={styles.stockInfoFieldValueWrap}>
-                    <Text style={[styles.stockInfoFieldValue, isDarkMode && styles.stockInfoFieldValueDark]}>
-                      {field.value}
+                    <Text style={[styles.stockInfoMeta, isDarkMode && styles.stockInfoMetaDark]} numberOfLines={1}>
+                      {selectedSymbol}
                     </Text>
-                    {field.helper ? (
-                      <Text style={[styles.stockInfoFieldHelper, isDarkMode && styles.stockInfoFieldHelperDark]}>
-                        {field.helper}
-                      </Text>
-                    ) : null}
                   </View>
                 </View>
-              ))}
+                <Pressable style={[styles.stockInfoHomeButton, isDarkMode && styles.stockInfoHomeButtonDark]}>
+                  <MaterialCommunityIcons
+                    name="open-in-new"
+                    size={14}
+                    color={isDarkMode ? '#e2e8f0' : '#0f172a'}
+                    style={styles.stockInfoHomeButtonIcon}
+                  />
+                  <Text style={[styles.stockInfoHomeButtonText, isDarkMode && styles.stockInfoHomeButtonTextDark]}>
+                    홈페이지
+                  </Text>
+                </Pressable>
+              </View>
+
+              <Text style={[styles.stockInfoSourceText, isDarkMode && styles.stockInfoSourceTextDark]}>
+                출처: 커뮤니티 집계 및 내부 더미 데이터
+              </Text>
+
+              <View style={[styles.stockInfoDescriptionCard, isDarkMode && styles.stockInfoDescriptionCardDark]}>
+                <Text style={[styles.stockInfoDescriptionText, isDarkMode && styles.stockInfoDescriptionTextDark]}>
+                  {stockInfoDescription}
+                </Text>
+              </View>
+
+              <View style={styles.stockInfoMenuList}>
+                {STOCK_INFO_MENU_ITEMS.map((menu, index) => {
+                  const isActive = index === 0;
+                  return (
+                    <Pressable
+                      key={menu}
+                      style={[
+                        styles.stockInfoMenuItem,
+                        isDarkMode && styles.stockInfoMenuItemDark,
+                        isActive && styles.stockInfoMenuItemActive,
+                        isActive && isDarkMode && styles.stockInfoMenuItemActiveDark
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.stockInfoMenuItemText,
+                          isDarkMode && styles.stockInfoMenuItemTextDark,
+                          isActive && styles.stockInfoMenuItemTextActive,
+                          isActive && isDarkMode && styles.stockInfoMenuItemTextActiveDark
+                        ]}
+                      >
+                        {menu}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <View style={styles.stockInfoFieldList}>
+                {stockInfoFields.map((field, index) => (
+                  <View
+                    key={field.label}
+                    style={[
+                      styles.stockInfoFieldRow,
+                      index < stockInfoFields.length - 1 && styles.stockInfoFieldRowDivider,
+                      index < stockInfoFields.length - 1 && isDarkMode && styles.stockInfoFieldRowDividerDark
+                    ]}
+                  >
+                    <Text style={[styles.stockInfoFieldLabel, isDarkMode && styles.stockInfoFieldLabelDark]}>
+                      {field.label}
+                    </Text>
+                    <View style={styles.stockInfoFieldValueWrap}>
+                      <Text style={[styles.stockInfoFieldValue, isDarkMode && styles.stockInfoFieldValueDark]}>
+                        {field.value}
+                      </Text>
+                      {field.helper ? (
+                        <Text style={[styles.stockInfoFieldHelper, isDarkMode && styles.stockInfoFieldHelperDark]}>
+                          {field.helper}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                ))}
+              </View>
             </View>
           </View>
         )}
@@ -205,18 +208,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start'
   },
-  stockInfoColumn: {
+  stockInfoWrap: {
     flex: 1.65,
     marginTop: STOCK_INFO_TOP_OFFSET,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    flexDirection: 'row',
+    alignItems: 'stretch'
+  },
+  stockInfoColumn: {
+    flex: 1,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderColor: 'transparent',
     backgroundColor: '#ffffff',
-    padding: 12
+    padding: STOCK_INFO_CONTENT_INSET
   },
   stockInfoColumnDark: {
-    borderColor: '#36363B',
+    borderColor: 'transparent',
     backgroundColor: '#212429'
+  },
+  stockInfoDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    marginTop: STOCK_INFO_CONTENT_INSET,
+    marginRight: 10,
+    backgroundColor: '#e2e8f0'
+  },
+  stockInfoDividerDark: {
+    backgroundColor: '#36363B'
   },
   stockInfoHeadRow: {
     flexDirection: 'row',
